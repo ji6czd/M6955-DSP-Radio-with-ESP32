@@ -47,11 +47,20 @@ void loop()
 		Serial.println("13 ON");
 	}
 	else if (readSw(12)) {
-		radio.powerOn();
+		akc6955Band band = radio.getBand();
+		if (band.bits.am <= BAND_MW4) {
+			band.bits.am++;
+		} else {
+			band.bits.am=0;
+		}
+		radio.setBand(band);
+		Serial.println(band.bits.am);
 		Serial.println("12 ON");
 	}
 	else if (readSw(14)) {
-		Serial.println(radio.getBand(), BIN);
+		bool mode = radio.getMode();
+		radio.setMode(!mode);
+		Serial.println(radio.getMode(), BIN);
 		Serial.println("14 ON");
 	}
 }

@@ -128,11 +128,6 @@ bool M6955::powerOff()
   return true;
 }
 
-uint8_t M6955::getBand(void)
-{
-	return m6955Read(AKC6955_BAND);
-}
-
 uint16_t M6955::getCh(void)
 {
 	uint16_t ch = m6955Read(AKC6955_CH_HI);
@@ -148,16 +143,57 @@ bool M6955::getMode()
 	return cfg.bits.fm_en;
 }
 
+/*
+電波形式の設定。bool-AM true=FM
+周波数の変更はしない。
+周波数の変更が必要な場合は別途setCh()を呼ぶこと
+*/
+
 bool M6955::setMode(bool mode)
 {
 	akc6955Config cfg;
 	cfg.byte = m6955Read(AKC6955_CONFIG);
 	cfg.bits.fm_en = mode;
+	// 書き込みシーケンス
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	//m6955Write(AKC6955_BAND, band);
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	cfg.bits.tune=1;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	cfg.bits.tune=0;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
 	return cfg.bits.fm_en;
 }
 
-bool M6955::setBand(uint8_t band)
+akc6955Band M6955::getBand(void)
 {
+	akc6955Band b;
+	b.byte = m6955Read(AKC6955_BAND);
+	return b;
+}
+
+bool M6955::setBand(akc6955Band b)
+{
+	akc6955Config cfg;
+	cfg.byte = m6955Read(AKC6955_CONFIG);
+	akc6955Band curBand;
+	curBand.byte = m6955Read(AKC6955_BAND);
+	if(getMode()) {
+		curBand.bits.fm = b.bits.fm;
+	} else {
+		curBand.bits.am = b.bits.am;
+	}
+	m6955Write(AKC6955_BAND, curBand.byte);
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	cfg.bits.tune=1;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
 	return true;
 }
