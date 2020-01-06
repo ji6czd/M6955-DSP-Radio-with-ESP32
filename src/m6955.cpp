@@ -131,9 +131,33 @@ bool M6955::powerOff()
 uint16_t M6955::getCh(void)
 {
 	uint16_t ch = m6955Read(AKC6955_CH_HI);
+	ch &= 0b11100000; // 先頭の3ビットはチャネル番号ではない
 	ch  = ch << 8;
 	ch += m6955Read(AKC6955_CH_LO);
 	return ch;
+}
+
+uint16_t M6955::setCh(uint16_t ch)
+{
+	akc6955Config cfg;
+	cfg.byte = m6955Read(AKC6955_CONFIG);
+	uint8_t c = m6955Read(AKC6955_CH_HI); // 設定値保存
+	c &= 0b11100000; // 上位3ビットだけを保存
+	ch &= 0x1fff; // 先頭の3ビットはチャネル番号ではない
+	m6955Write(AKC6955_CH_LO, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
+	ch = ch >> 8;
+	ch = ch | c;
+	m6955Write(AKC6955_CH_HI, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	cfg.bits.tune=1;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delay(1);
+	return getCh();
 }
 
 bool M6955::getMode()

@@ -42,8 +42,8 @@ enum band_fm {
 };
 
 struct band_bits {
-	uint8_t am:5;
 	uint8_t fm:3;
+	uint8_t am:5;
 };
 
 union akc6955Band {
@@ -64,6 +64,7 @@ public:
   bool getMode();
   bool setBand(akc6955Band b);
   bool setMode(bool mode);
+	uint16_t setCh(uint16_t ch);
   unsigned char errorStatus() { return error; }
 };
 
