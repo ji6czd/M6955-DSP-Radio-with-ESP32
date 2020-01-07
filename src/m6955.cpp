@@ -82,6 +82,19 @@ uint8_t m6955Read(uint8_t memory_address)
 	return data;
 }
 
+bool setPhase(bool Phase)
+{
+	uint8_t st = m6955Read(AKC6955_VOLUME);
+	if (Phase) {
+		st |= 0x02;
+	} else {
+	if (Phase) {
+		st &= 0xfd;;
+	}
+	return Phase;
+}
+}
+
 /* class functions */
 bool M6955::begin()
 {
