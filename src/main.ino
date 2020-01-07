@@ -26,6 +26,8 @@ void setup()
 		Serial.println("Power on failed");
 		sOut.morseOut(radio.errorStatus());
 	}
+	radio.setMode(0);
+	radio.setFreq(590);
 }
 
 bool readSw(uint8_t sw)
@@ -41,7 +43,7 @@ bool readSw(uint8_t sw)
 	return true;
 }
 
-void getStatus()
+void printStatus()
 {
 	bool mode = radio.getMode();
 	akc6955Band curBand;
@@ -51,6 +53,7 @@ void getStatus()
 	Serial.println(curBand.bits.am);
 	Serial.println(curBand.bits.fm);
 	Serial.println(curCh);
+	Serial.println(radio.getFreq());
 	return;
 }
 
@@ -58,8 +61,9 @@ void loop()
 {
 	bool ret = false;
 	if (readSw(13)) {
-		uint8_t ch = radio.getCh();
+		uint16_t ch = radio.getCh();
 		Serial.println(radio.setCh(++ch));
+		Serial.println(radio.getFreq());
 	}
 	else if (readSw(12)) {
 		akc6955Band band = radio.getBand();
@@ -85,10 +89,15 @@ void loop()
 		bool mode = radio.getMode();
 		radio.setMode(!mode);
 		Serial.println(radio.getMode(), BIN);
+		if (!mode) {
+			radio.setFreq(76000);
+		} else {
+			radio.setFreq(594);
+		}
 		Serial.println("14 ON");
 	}
 	else if (readSw(27)) {
-		getStatus();
+		printStatus();
 		Serial.println("27 ON");
 	}
 }

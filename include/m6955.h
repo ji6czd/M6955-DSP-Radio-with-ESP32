@@ -65,6 +65,9 @@ public:
   bool setBand(akc6955Band b);
   bool setMode(bool mode);
 	uint16_t setCh(uint16_t ch);
+	uint32_t getFreq();
+	bool setFreq(uint32_t freq);
+
   unsigned char errorStatus() { return error; }
 };
 

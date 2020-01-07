@@ -72,9 +72,9 @@ uint8_t m6955Read(uint8_t memory_address)
   Wire.beginTransmission(AKC6955_ADDR);
   Wire.write(memory_address);
   Wire.endTransmission(false);
-	delay(1);
+	delayMicroseconds(1);
 	Wire.requestFrom(AKC6955_ADDR, 1);
-	delay(1);
+	delayMicroseconds(1);
 	if (Wire.available()) {
 		data = Wire.read();
 	}
@@ -86,13 +86,30 @@ bool setPhase(bool Phase)
 {
 	uint8_t st = m6955Read(AKC6955_VOLUME);
 	if (Phase) {
-		st |= 0x02;
+		st |= 0x01;
 	} else {
-	if (Phase) {
-		st &= 0xfd;;
+		st &= 0xfe;
 	}
 	return Phase;
 }
+
+bool isAM3KMode()
+{
+	return m6955Read(AKC6955_CNR_AM) & 0x80;
+}
+void doTune(bool mode) {
+	akc6955Config cfg;
+	cfg.bits.power=1;
+	cfg.bits.fm_en = mode;
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delayMicroseconds(1);
+	cfg.bits.tune=1;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delayMicroseconds(1);
+	cfg.bits.tune=0;
+	m6955Write(AKC6955_CONFIG, cfg.byte);
+	delayMicroseconds(10);
 }
 
 /* class functions */
@@ -109,7 +126,7 @@ bool M6955::powerOn()
 {
   pinMode(P_ON, OUTPUT);
   digitalWrite(P_ON, HIGH);
-	delay(0);
+	delayMicroseconds(100);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
 	 Serial.println(cfg.byte, BIN);
@@ -120,6 +137,7 @@ bool M6955::powerOn()
 		error = 'P';
 		return false;
 	}
+	setPhase(0);
   return true;
 }
 
@@ -127,7 +145,7 @@ bool M6955::powerOff()
 {
   pinMode(P_ON, OUTPUT);
   digitalWrite(P_ON, HIGH);
-	delay(0);
+	delayMicroseconds(50);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
 	 Serial.println(cfg.byte, BIN);
@@ -144,10 +162,9 @@ bool M6955::powerOff()
 uint16_t M6955::getCh(void)
 {
 	uint16_t ch = m6955Read(AKC6955_CH_HI);
-	ch &= 0b11100000; // 先頭の3ビットはチャネル番号ではない
 	ch  = ch << 8;
 	ch += m6955Read(AKC6955_CH_LO);
-	return ch;
+	return ch & 0x1fff;
 }
 
 uint16_t M6955::setCh(uint16_t ch)
@@ -161,15 +178,7 @@ uint16_t M6955::setCh(uint16_t ch)
 	ch = ch >> 8;
 	ch = ch | c;
 	m6955Write(AKC6955_CH_HI, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
-	cfg.bits.tune=0;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
-	cfg.bits.tune=1;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
-	cfg.bits.tune=0;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
+	doTune(cfg.bits.fm_en);
 	return getCh();
 }
 
@@ -192,16 +201,7 @@ bool M6955::setMode(bool mode)
 	cfg.byte = m6955Read(AKC6955_CONFIG);
 	cfg.bits.fm_en = mode;
 	// 書き込みシーケンス
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	//m6955Write(AKC6955_BAND, band);
-	cfg.bits.tune=0;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
-	cfg.bits.tune=1;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
-	cfg.bits.tune=0;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
+	doTune(mode);
 	return cfg.bits.fm_en;
 }
 
@@ -224,13 +224,39 @@ bool M6955::setBand(akc6955Band b)
 		curBand.bits.am = b.bits.am;
 	}
 	m6955Write(AKC6955_BAND, curBand.byte);
-	cfg.bits.tune=0;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
-	cfg.bits.tune=1;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(1);
-	cfg.bits.tune=0;
-	m6955Write(AKC6955_CONFIG, cfg.byte);
+	doTune(cfg.bits.fm_en);
+	return true;
+}
+uint32_t M6955::getFreq()
+{
+	uint16_t ch = getCh();
+	if (getMode()) {
+		return (ch * 25) + 30000;
+	} else {
+		if (isAM3KMode()) {
+			return ch*3;
+		}
+		return ch*5;
+	}
+}
+
+bool M6955::setFreq(uint32_t freq)
+{
+	uint16_t ch;
+	if (freq < 30000) {
+		// LF,MF,HF	aM Mode
+		setMode(false);
+		if (isAM3KMode()) {
+			ch = freq / 3;
+		} else {
+			ch = freq / 5;
+		}
+	} else {
+		// VHF FM
+		setMode(true);
+		freq -= 30000;
+		ch = freq / 25;
+	}
+	setCh(ch);
 	return true;
 }
