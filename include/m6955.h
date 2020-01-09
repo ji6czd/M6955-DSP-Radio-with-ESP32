@@ -59,6 +59,7 @@ public:
   bool begin();
   bool powerOn();
   bool powerOff();
+	bool ispowerOn();
   akc6955Band getBand(void);
   uint16_t getCh(void);
   bool getMode();

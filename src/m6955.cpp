@@ -126,7 +126,7 @@ bool M6955::powerOn()
 {
   pinMode(P_ON, OUTPUT);
   digitalWrite(P_ON, HIGH);
-	delayMicroseconds(100);
+	delayMicroseconds(1000);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
 	 Serial.println(cfg.byte, BIN);
@@ -157,6 +157,13 @@ bool M6955::powerOff()
 		return false;
 	}
   return true;
+}
+
+bool M6955::ispowerOn()
+{
+		akc6955Config cfg;
+	 cfg.byte = m6955Read(AKC6955_CONFIG);
+	 return cfg.bits.power;
 }
 
 uint16_t M6955::getCh(void)
