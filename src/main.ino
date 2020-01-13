@@ -20,12 +20,12 @@ void setup()
 		sOut.morseOut(radio.errorStatus());
 		return;
 	}
-	radio.setMode(0);
+	radio.setMode(1);
 	akc6955Band band;
-	band.bits.am = BAND_SW3;
+	band.bits.am = BAND_MW2;
 	band.bits.fm = BAND_FM2;
 	radio.setBand(band);
-	radio.setFreq(7275);
+	radio.setFreq(80000);
 }
 
 void printStatus()
@@ -52,17 +52,13 @@ void bandToggle(bool direction)
 		direction ? band.bits.am++ : band.bits.am--;
 		if (band.bits.am > BAND_SW13) return;
 	}
-		Serial.print(band.bits.am);
-		Serial.print(':');
-		Serial.println(band.bits.fm);
 	radio.setBand(band);
 }
-
 void loop()
 {
 	uint8_t cmd = NO_CMD;
 	uint16_t ch=0; // 関数内で現在のチャネル番号を取得
-	
+	bool mode=false;
 	cmd = panel.readCmd();
 	switch (cmd) {
 	case POWER:
@@ -75,15 +71,22 @@ void loop()
 		}
 		break;
 	case DOWN:
+		printStatus();
+		break;
 	case DIAL_L:
+		mode = radio.getMode();
 		ch = radio.getCh();
-		radio.setCh(--ch);
+		mode ? ch-=4 : ch--;
+		radio.setCh(ch);
 		Serial.println(radio.getFreq());
 		break;
 	case UP:
 	case DIAL_R:
+		mode = radio.getMode();
 		ch = radio.getCh();
-		radio.setCh(++ch);
+		mode ? ch+=4 : ch++;
+		Serial.println(ch);
+		radio.setCh(ch);
 		Serial.println(radio.getFreq());
 		break;
 	case MODE:

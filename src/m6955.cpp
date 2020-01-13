@@ -60,8 +60,11 @@ static bool SetupI2C()
 uint8_t m6955Write(uint8_t memory_address, uint8_t value)
 {
   Wire.beginTransmission(AKC6955_ADDR);
+	delayMicroseconds(1);
   Wire.write(memory_address);
+	delayMicroseconds(1);
   Wire.write(value);
+	delayMicroseconds(1);
   uint8_t ret = Wire.endTransmission();
 	return ret;
 }
@@ -79,6 +82,7 @@ uint8_t m6955Read(uint8_t memory_address)
 		data = Wire.read();
 	}
 	Wire.endTransmission(1);
+	delay(1);
 	return data;
 }
 
@@ -90,26 +94,43 @@ bool setPhase(bool Phase)
 	} else {
 		st &= 0xfe;
 	}
-	return Phase;
+	m6955Write(AKC6955_VOLUME, st);
+	delay(1);
+}
+
+bool setVolume(uint8_t vol)
+{
+	uint8_t st = m6955Read(AKC6955_PRE);
+	if (vol > 0b11) vol=0b11;
+	/* このレジスタの2,3ビットが音量を設定する */
+	vol <<= 2;
+	st &= 0xf3;
+	st |= vol;
+	m6955Write(AKC6955_VOLUME, st);
 }
 
 bool isAM3KMode()
 {
 	return m6955Read(AKC6955_CNR_AM) & 0x80;
 }
-void doTune(bool mode) {
+void doTune(bool mode)
+{
 	akc6955Config cfg;
 	cfg.bits.power=1;
 	cfg.bits.fm_en = mode;
 	cfg.bits.tune=0;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delayMicroseconds(1);
+	delay(1);
 	cfg.bits.tune=1;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delayMicroseconds(1);
+	delay(1);
 	cfg.bits.tune=0;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delayMicroseconds(100);
+	delay(10);
+	while (!(m6955Read(AKC6955_RCH_HI) & 0x40)) {
+		delay(10);
+		Serial.print('.');
+	}
 }
 
 /* class functions */
@@ -129,7 +150,6 @@ bool M6955::powerOn()
 	delayMicroseconds(1000);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
-	 Serial.println(cfg.byte, BIN);
 	cfg.bits.mute=0; // cleaer mute bit
 	cfg.bits.power=1; // Set power flag
 	if (m6955Write(AKC6955_CONFIG, cfg.byte)) {
@@ -138,6 +158,7 @@ bool M6955::powerOn()
 		return false;
 	}
 	setPhase(0);
+	setVolume(2);
   return true;
 }
 
@@ -148,7 +169,6 @@ bool M6955::powerOff()
 	delayMicroseconds(50);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
-	 Serial.println(cfg.byte, BIN);
 	cfg.bits.mute=0; // cleaer mute bit
 	cfg.bits.power=0; // Set power flag
 	if (m6955Write(AKC6955_CONFIG, cfg.byte)) {
@@ -168,9 +188,9 @@ bool M6955::ispowerOn()
 
 uint16_t M6955::getRealCh(void)
 {
-	uint16_t ch = m6955Read(AKC6955_CH_HI);
+	uint16_t ch = m6955Read(AKC6955_RCH_HI);
 	ch  = ch << 8;
-	ch += m6955Read(AKC6955_CH_LO);
+	ch += m6955Read(AKC6955_RCH_LO);
 	return ch & 0x1fff;
 }
 
