@@ -21,7 +21,11 @@ void setup()
 		return;
 	}
 	radio.setMode(0);
-	radio.setFreq(594);
+	akc6955Band band;
+	band.bits.am = BAND_SW3;
+	band.bits.fm = BAND_FM2;
+	radio.setBand(band);
+	radio.setFreq(7275);
 }
 
 void printStatus()
@@ -38,10 +42,26 @@ void printStatus()
 	return;
 }
 
+void bandToggle(bool direction)
+{
+	akc6955Band band = radio.getBand();
+	if (radio.getMode()) {
+		direction ? band.bits.fm++ : band.bits.fm--;
+		if (band.bits.fm > BAND_TV2) return;
+	} else {
+		direction ? band.bits.am++ : band.bits.am--;
+		if (band.bits.am > BAND_SW13) return;
+	}
+		Serial.print(band.bits.am);
+		Serial.print(':');
+		Serial.println(band.bits.fm);
+	radio.setBand(band);
+}
+
 void loop()
 {
 	uint8_t cmd = NO_CMD;
-	uint8_t ch=0; // 関数内で現在のチャネル番号を取得
+	uint16_t ch=0; // 関数内で現在のチャネル番号を取得
 	
 	cmd = panel.readCmd();
 	switch (cmd) {
@@ -55,17 +75,30 @@ void loop()
 		}
 		break;
 	case DOWN:
+	case DIAL_L:
 		ch = radio.getCh();
 		radio.setCh(--ch);
+		Serial.println(radio.getFreq());
 		break;
 	case UP:
+	case DIAL_R:
 		ch = radio.getCh();
 		radio.setCh(++ch);
+		Serial.println(radio.getFreq());
+		break;
+	case MODE:
+		radio.setMode(!radio.getMode());
+		break;
+	case BAND_UP:
+		bandToggle(true);
+		break;
+	case BAND_DOWN:
+		bandToggle(false);
 		break;
 	default:
 		; // なにもしない
 		break;
 	}
-	if(cmd) printStatus();
-
+	if(cmd) {
+	}
 }

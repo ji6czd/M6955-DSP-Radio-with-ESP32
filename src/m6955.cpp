@@ -109,7 +109,7 @@ void doTune(bool mode) {
 	delayMicroseconds(1);
 	cfg.bits.tune=0;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delayMicroseconds(10);
+	delayMicroseconds(100);
 }
 
 /* class functions */
@@ -166,7 +166,7 @@ bool M6955::ispowerOn()
 	 return cfg.bits.power;
 }
 
-uint16_t M6955::getCh(void)
+uint16_t M6955::getRealCh(void)
 {
 	uint16_t ch = m6955Read(AKC6955_CH_HI);
 	ch  = ch << 8;
@@ -186,21 +186,16 @@ uint16_t M6955::setCh(uint16_t ch)
 	ch = ch | c;
 	m6955Write(AKC6955_CH_HI, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
 	doTune(cfg.bits.fm_en);
+	channel = ch; // チューニング後のチャンネルを保存
 	return getCh();
 }
 
-bool M6955::getMode()
+bool M6955::getRealMode()
 {
 	akc6955Config cfg;
 	cfg.byte = m6955Read(AKC6955_CONFIG);
 	return cfg.bits.fm_en;
 }
-
-/*
-電波形式の設定。bool-AM true=FM
-周波数の変更はしない。
-周波数の変更が必要な場合は別途setCh()を呼ぶこと
-*/
 
 bool M6955::setMode(bool mode)
 {
@@ -212,7 +207,7 @@ bool M6955::setMode(bool mode)
 	return cfg.bits.fm_en;
 }
 
-akc6955Band M6955::getBand(void)
+akc6955Band M6955::getRealBand(void)
 {
 	akc6955Band b;
 	b.byte = m6955Read(AKC6955_BAND);
@@ -232,11 +227,26 @@ bool M6955::setBand(akc6955Band b)
 	}
 	m6955Write(AKC6955_BAND, curBand.byte);
 	doTune(cfg.bits.fm_en);
+	band.byte = curBand.byte;
 	return true;
 }
+
 uint32_t M6955::getFreq()
 {
 	uint16_t ch = getCh();
+	if (getMode()) {
+		return (ch * 25) + 30000;
+	} else {
+		if (isAM3KMode()) {
+			return ch*3;
+		}
+		return ch*5;
+	}
+}
+
+uint32_t M6955::getRealFreq()
+{
+	uint16_t ch = getRealCh();
 	if (getMode()) {
 		return (ch * 25) + 30000;
 	} else {

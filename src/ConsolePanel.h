@@ -6,7 +6,10 @@ public:
 	bool begin();		// (
 	uint8_t readCmd();
 private:
-	bool readSw(uint8_t pin);
+	uint8_t prevCmd;
+	bool readSw(uint8_t pin, uint32_t th);
+	bool readSw(uint8_t pin) { return readSw(pin, 10000); };
+	int readDial(uint8_t pinA, uint8_t pinB);
 };
 
 enum
@@ -17,8 +20,8 @@ cmd {
      BAND_DOWN = 17,
      BAND_UP = 5,
      MODE = 18,
-     DIAL_L = 13,
-     DIAL_R = 12,
+     DIAL_L = 12,
+     DIAL_R = 13,
      NO_CMD = 0
 };
 

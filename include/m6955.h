@@ -53,22 +53,27 @@ union akc6955Band {
 
 class M6955 {
 private:
-  volatile unsigned char band;
-  volatile unsigned char error;
+	uint16_t channel;
+	akc6955Band band;
+	bool mode;
+	volatile unsigned char error;
+	uint32_t getRealFreq();
+	akc6955Band getRealBand(void);
+	uint16_t getRealCh(void);
+	bool getRealMode();
 public:
   bool begin();
   bool powerOn();
   bool powerOff();
 	bool ispowerOn();
-  akc6955Band getBand(void);
-  uint16_t getCh(void);
-  bool getMode();
   bool setBand(akc6955Band b);
   bool setMode(bool mode);
 	uint16_t setCh(uint16_t ch);
-	uint32_t getFreq();
 	bool setFreq(uint32_t freq);
-
+	akc6955Band getBand(void) { return getRealBand(); }
+	uint16_t getCh(void) { return getRealCh(); }
+	bool getMode() { return getRealMode(); }
+	uint32_t getFreq();
   unsigned char errorStatus() { return error; }
 };
 
