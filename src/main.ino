@@ -71,21 +71,15 @@ void loop()
 		}
 		break;
 	case DOWN:
-		printStatus();
-		break;
 	case DIAL_L:
-		mode = radio.getMode();
 		ch = radio.getCh();
-		mode ? ch-=4 : ch--;
-		radio.setCh(ch);
+		radio.setCh(--ch);
 		Serial.println(radio.getFreq());
 		break;
 	case UP:
 	case DIAL_R:
-		mode = radio.getMode();
 		ch = radio.getCh();
-		mode ? ch+=4 : ch++;
-		Serial.println(ch);
+		Serial.println(++ch);
 		radio.setCh(ch);
 		Serial.println(radio.getFreq());
 		break;

@@ -16,8 +16,7 @@
 #define AKC6955_STEREO 7
 #define AKC6955_THRESH 8
 #define AKC6955_ENABLE 9
-#define AKC6955_FM_SEEKSTEP 10
-#define AKC6955_SPACE  11
+#define AKC6955_FM_SEEKSTEP 11
 #define AKC6955_ADCEN 12
 #define AKC6955_PRE 13
 // 14-19 = RESERVE
@@ -126,9 +125,9 @@ void doTune(bool mode)
 	delay(1);
 	cfg.bits.tune=0;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(10);
+	delay(20);
 	while (!(m6955Read(AKC6955_RCH_HI) & 0x40)) {
-		delay(10);
+		delay(20);
 		Serial.print('.');
 	}
 }
@@ -145,8 +144,8 @@ bool M6955::begin()
 
 bool M6955::powerOn()
 {
-  pinMode(P_ON, OUTPUT);
-  digitalWrite(P_ON, HIGH);
+	pinMode(P_ON, OUTPUT);
+	digitalWrite(P_ON, HIGH);
 	delayMicroseconds(1000);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
@@ -159,6 +158,7 @@ bool M6955::powerOn()
 	}
 	setPhase(0);
 	setVolume(2);
+	m6955Write(AKC6955_FM_SEEKSTEP, 0xc0);
   return true;
 }
 
@@ -240,21 +240,26 @@ bool M6955::setBand(akc6955Band b)
 	cfg.byte = m6955Read(AKC6955_CONFIG);
 	akc6955Band curBand;
 	curBand.byte = m6955Read(AKC6955_BAND);
+	uint32_t Freq = getFreq();
 	if(getMode()) {
 		curBand.bits.fm = b.bits.fm;
+		if (Freq < 76000) Freq = 76000;
 	} else {
 		curBand.bits.am = b.bits.am;
+		if (Freq < 150) Freq = 150;
 	}
 	m6955Write(AKC6955_BAND, curBand.byte);
 	doTune(cfg.bits.fm_en);
 	band.byte = curBand.byte;
+	setFreq(Freq);
 	return true;
 }
 
 uint32_t M6955::getFreq()
 {
 	uint16_t ch = getCh();
-	if (getMode()) {
+	bool mode = getMode();
+	if (mode) {
 		return (ch * 25) + 30000;
 	} else {
 		if (isAM3KMode()) {
