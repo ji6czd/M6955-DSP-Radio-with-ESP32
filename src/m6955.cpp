@@ -48,6 +48,38 @@ union akc6955Config {
 
 M6955 radio;
 
+struct BandPlan
+{
+	uint16_t start;
+	uint16_t end;
+	uint8_t step;
+};
+BandPlan bpAM[] =
+	{30, 93, 1,
+	 102, 342, 1,
+	 174, 540, 3,
+	 102, 342, 2,
+	 940, 2000, 1,
+	 640, 820, 1,
+	 940, 1120, 1,
+	 1140, 1280, 1,
+	 1360, 1520, 1,
+	 1840, 2000, 1,
+	 2280, 2440, 1,
+	 2700, 2860, 1,
+	 3000, 3180, 1,
+	 3480, 3580, 1,
+	 3780, 3940, 1,
+	 4280, 4380, 1,
+	 2280, 3580, 1,
+	 0,0,0
+	};
+BandPlan bpFM[] =
+	{2280, 3120, 1,
+	 1840, 3120, 4,
+	 0,0,0
+	};
+
 static bool SetupI2C()
 {
   pinMode(21, INPUT_PULLUP);
@@ -239,19 +271,21 @@ bool M6955::setBand(akc6955Band b)
 	akc6955Config cfg;
 	cfg.byte = m6955Read(AKC6955_CONFIG);
 	akc6955Band curBand;
+	uint16_t ch = getCh();
 	curBand.byte = m6955Read(AKC6955_BAND);
-	uint32_t Freq = getFreq();
-	if(getMode()) {
+	if(cfg.bits.fm_en) {
 		curBand.bits.fm = b.bits.fm;
-		if (Freq < 76000) Freq = 76000;
+		if(ch < bpFM[b.bits.fm].start) ch=bpFM[b.bits.fm].start;
+		else if(ch > bpFM[b.bits.fm].end) ch=bpFM[b.bits.fm].end;
 	} else {
 		curBand.bits.am = b.bits.am;
-		if (Freq < 150) Freq = 150;
+		if(ch < bpAM[b.bits.am].start) ch=bpAM[b.bits.am].start;
+		else if(ch > bpAM[b.bits.am].end) ch=bpAM[b.bits.am].end;
 	}
 	m6955Write(AKC6955_BAND, curBand.byte);
 	doTune(cfg.bits.fm_en);
 	band.byte = curBand.byte;
-	setFreq(Freq);
+	setCh(ch);
 	return true;
 }
 
