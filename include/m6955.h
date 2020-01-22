@@ -1,7 +1,7 @@
 #ifndef _M6955_H_
 #define _M6955_H_
 
-#include <arduino.h>
+#include <Arduino.h>
 #include <Wire.h>
 
 /*

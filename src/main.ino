@@ -1,4 +1,4 @@
-#include <arduino.h>
+#include <Arduino.h>
 #include <Wire.h>
 #include <m6955.h>
 #include <soundOut.h>
