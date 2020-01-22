@@ -58,22 +58,25 @@ void loop()
 {
 	uint8_t cmd = NO_CMD;
 	uint16_t ch=0; // 関数内で現在のチャネル番号を取得
-	bool mode=false;
+	bool mode=radio.getMode();;
 	cmd = panel.readCmd();
 	switch (cmd) {
 	case POWER:
 		if (radio.ispowerOn()) {
 			radio.powerOff();
 			Serial.println("Power off");
+			sOut.morseOut('I');
 		} else {
 			radio.powerOn();
 			Serial.println("Power On");
+			sOut.morseOut('M');
 		}
 		break;
 	case DOWN:
 	case DIAL_L:
 		ch = radio.getCh();
 		radio.setCh(--ch);
+		sOut.beep(1300, 3);
 		Serial.println(radio.getFreq());
 		break;
 	case UP:
@@ -81,10 +84,13 @@ void loop()
 		ch = radio.getCh();
 		Serial.println(++ch);
 		radio.setCh(ch);
+		sOut.beep(1300, 3);
 		Serial.println(radio.getFreq());
 		break;
 	case MODE:
-		radio.setMode(!radio.getMode());
+		radio.setMode(!mode);
+		mode = radio.getMode();
+		mode ? sOut.morseOut('F') : sOut.morseOut('A');
 		break;
 	case BAND_UP:
 		bandToggle(true);

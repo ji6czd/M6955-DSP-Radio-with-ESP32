@@ -76,5 +76,5 @@ void soundOut::begin()
 {
 	ledcSetup(0, 1000, 13);
 	ledcAttachPin(25, 0);
-	vol=1;
+	vol=255;
 }
