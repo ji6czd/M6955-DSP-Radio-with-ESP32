@@ -30,11 +30,11 @@ int ConsolePanel::readDial(uint8_t pinA, uint8_t pinB)
 	bool pA=false, pB=false;
 	int r=0; // Current state
 	int dir=0;
-	readSw(pinA, 100) ? pA=true : pA=false;
-	readSw(pinB, 100) ? pB=true : pB=false;
+	readSw(pinA, 50) ? pA=true : pA=false;
+	readSw(pinB, 50) ? pB=true : pB=false;
 	while (pA || pB) {
-		readSw(pinA, 100) ? pA=true : pA=false;
-		readSw(pinB, 100) ? pB=true : pB=false;
+		readSw(pinA, 50) ? pA=true : pA=false;
+		readSw(pinB, 50) ? pB=true : pB=false;
 		if (r == 2 && !pA) dir=1;
 		if (r == -2 && !pB) dir=-1;
 		if (pA && !pB) r=1;
