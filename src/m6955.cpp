@@ -84,20 +84,18 @@ static bool SetupI2C()
 {
   pinMode(21, INPUT_PULLUP);
   pinMode(22, INPUT_PULLUP);
-  bool ret = Wire.begin(21,22, 400000);
+  bool ret = Wire.begin(21,22, 100000);
   return ret;
 }
 
 uint8_t m6955Write(uint8_t memory_address, uint8_t value)
 {
   Wire.beginTransmission(AKC6955_ADDR);
-	delayMicroseconds(1);
   Wire.write(memory_address);
-	delayMicroseconds(1);
   Wire.write(value);
-	delayMicroseconds(1);
   uint8_t ret = Wire.endTransmission();
-	return ret;
+  delay(1);
+  return ret;
 }
 
 uint8_t m6955Read(uint8_t memory_address)
@@ -106,9 +104,7 @@ uint8_t m6955Read(uint8_t memory_address)
   Wire.beginTransmission(AKC6955_ADDR);
   Wire.write(memory_address);
   Wire.endTransmission(false);
-	delayMicroseconds(1);
-	Wire.requestFrom(AKC6955_ADDR, 1);
-	delayMicroseconds(1);
+  Wire.requestFrom(AKC6955_ADDR, 1);
 	if (Wire.available()) {
 		data = Wire.read();
 	}
@@ -157,9 +153,9 @@ void doTune(bool mode)
 	delay(1);
 	cfg.bits.tune=0;
 	m6955Write(AKC6955_CONFIG, cfg.byte);
-	delay(20);
+	delay(1);
 	while (!(m6955Read(AKC6955_RCH_HI) & 0x40)) {
-		delay(20);
+		delay(5);
 		Serial.print('.');
 	}
 }
@@ -178,7 +174,7 @@ bool M6955::powerOn()
 {
 	pinMode(P_ON, OUTPUT);
 	digitalWrite(P_ON, HIGH);
-	delayMicroseconds(1000);
+	delay(1);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
 	cfg.bits.mute=0; // cleaer mute bit
@@ -198,7 +194,7 @@ bool M6955::powerOff()
 {
   pinMode(P_ON, OUTPUT);
   digitalWrite(P_ON, HIGH);
-	delayMicroseconds(50);
+	delay(1);
 	akc6955Config cfg;
 	 cfg.byte = m6955Read(AKC6955_CONFIG);
 	cfg.bits.mute=0; // cleaer mute bit
