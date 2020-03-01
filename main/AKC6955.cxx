@@ -28,13 +28,14 @@ int AKC6955::powerOn()
   vTaskDelay(30 / portTICK_RATE_MS);
   // Clear mute
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN);
-  i2c_master_write_byte(cmd, 0x0, ACK_CHECK_EN);
-  i2c_master_write_byte(cmd, 0xc8, ACK_CHECK_EN);
-  i2c_master_stop(cmd);
-  int ret = i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
+  ESP_ERROR_CHECK(i2c_master_start(cmd));
+  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN));
+  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, 0x0, ACK_CHECK_EN));
+  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, 0xc8, ACK_CHECK_EN));
+  ESP_ERROR_CHECK(i2c_master_stop(cmd));
+  ESP_ERROR_CHECK(i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS));
   i2c_cmd_link_delete(cmd);
+  int ret=0;
   if (ret == ESP_FAIL) {
     return ret;
   }
