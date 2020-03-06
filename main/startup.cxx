@@ -22,6 +22,9 @@ Internet and analogue BCL Radio startup functions
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_console.h"
+#include "esp_vfs_fat.h"
+#include "cmd_system.h"
 #include "AKC6955.hxx"
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
@@ -41,7 +44,8 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-static const char *TAG = "wifi station";
+#define MOUNT_PATH "/data"
+static const char *TAG = "radio";
 
 static int s_retry_num = 0;
 
@@ -171,12 +175,38 @@ int initNVS()
   ESP_ERROR_CHECK(ret);
   return ret;
 }
+static void initialize_filesystem(void)
+{
+  static wl_handle_t wl_handle;
+  const esp_vfs_fat_mount_config_t
+    mount_config = {
+		    .format_if_mount_failed = 1,
+		    .max_files = 16
+  };
+  esp_err_t err = esp_vfs_fat_spiflash_mount(MOUNT_PATH, "storage", &mount_config, &wl_handle);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to mount FATFS (%s)", esp_err_to_name(err));
+    return;
+  }
+}
+
+void initRepl()
+{
+    esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+  repl_config.prompt = "radio %";
+  ESP_ERROR_CHECK(esp_console_repl_init(&repl_config));
+    register_system();
+    ESP_ERROR_CHECK(esp_console_repl_start());
+}
+
 extern "C" {
 void app_main(void)
 {
+  ESP_LOGI(TAG, "Starting BCL Radio!\n");
   initNVS();
   wifi_init_sta();
   initPeripherals();
+  initRepl();
   Radio.Init();
   Radio.powerOn();
 }
