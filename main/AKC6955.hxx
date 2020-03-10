@@ -15,7 +15,7 @@ class AKC6955 {
 public:
   int Init();
   int powerOn();
-  int powerOff() {return 0;};
+  int powerOff();
   int setMode(mod_t md){return 0;};
   mode_t getMode(){return 0;};
   int setBand(band_t bn){return 0;};
@@ -26,6 +26,7 @@ public:
 private:
   uint32_t freq;
   uint16_t ch;
+  int write(uint8_t memory_address, uint8_t value);
 };
 
 extern AKC6955 Radio;

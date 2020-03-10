@@ -1,39 +1,44 @@
+#include <cstring>
 #include "argtable3/argtable3.h"
 #include "esp_console.h"
 #include "esp_log.h"
 #include "cmd_system.h"
+#include "AKC6955.hxx"
+#include "Network.hxx"
 #include "RadioConsole.hxx"
 #include "vars.h"
 
 /* non-class C style functions */
+
 extern "C" {
 static struct {
-    struct arg_str *ssid;
-    struct arg_str *passwd;
-    struct arg_end *end;
-} WiFIInfoArgs;
+  struct arg_str *ssid;
+  struct arg_str *passwd;
+  struct arg_end *end;
+} WiFiInfoArgs;
 
 static int do_setWiFi_cmd(int argc, char **argv)
 {
-    int nerrors = arg_parse(argc, argv, (void **)&WiFIInfoArgs);
-    if (nerrors != 0) {
-        arg_print_errors(stderr, WiFIInfoArgs.end, argv[0]);
-        return 0;
-    }
+  int nerrors = arg_parse(argc, argv, (void **)&WiFiInfoArgs);
+  if (nerrors != 0) {
+    arg_print_errors(stderr, WiFiInfoArgs.end, argv[0]);
     return 0;
+  }
+  rnet.init(WiFiInfoArgs.ssid->sval[0], WiFiInfoArgs.passwd->sval[0]);
+  return 0;
 }
 
 static void registerWiFiInfo(void)
 {
-  WiFIInfoArgs.ssid = arg_str1("s", "ssid", "<ssid>", "Specify the ssld");
-  WiFIInfoArgs.passwd = arg_str1("p", "password", "<password>", "Specify the password");
-  WiFIInfoArgs.end = arg_end(2);
+  WiFiInfoArgs.ssid = arg_str1("s", "ssid", "<ssid>", "Specify the ssld");
+  WiFiInfoArgs.passwd = arg_str1("p", "password", "<password>", "Specify the password");
+  WiFiInfoArgs.end = arg_end(2);
     const esp_console_cmd_t WiFi_cmd = {
         .command = "wifi",
         .help = "Set WiFi ssid and password.",
         .hint = NULL,
         .func = &do_setWiFi_cmd,
-        .argtable = &WiFIInfoArgs
+        .argtable = &WiFiInfoArgs
     };
     ESP_ERROR_CHECK(esp_console_cmd_register(&WiFi_cmd));
 }
@@ -81,6 +86,10 @@ static int do_power_cmd(int argc, char **argv)
         arg_print_errors(stderr, powerArgs.end, argv[0]);
         return 0;
     }
+    if (strcmp(powerArgs.power->sval[0], "on"))
+      Radio.powerOn();
+    else
+      Radio.powerOff();
     return 0;
 }
 
@@ -100,15 +109,15 @@ static void registerPower(void)
 
 /*
 static struct {
-    struct arg_int *ssid;
-    struct arg_int *passwd;
+    struct arg_str *ssid;
+    struct arg_str *passwd;
     struct arg_end *end;
-}  WiFIInfoArgs;
+} WiFIInfoArgs;
 
 static int do_setWiFi_cmd(int argc, char **argv)
 {
-    int nerrors = arg_parse(argc, argv, (void **)&WiFIInfoArgs);
-    if (nerrors != 0) {
+int nerrors = arg_parse(argc, argv, (void **)&WiFIInfoArgs);
+if (nerrors != 0) {
         arg_print_errors(stderr, WiFIInfoArgs.end, argv[0]);
         return 0;
     }
