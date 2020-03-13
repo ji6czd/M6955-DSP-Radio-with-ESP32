@@ -24,7 +24,7 @@ static int do_setWiFi_cmd(int argc, char **argv)
     arg_print_errors(stderr, WiFiInfoArgs.end, argv[0]);
     return 0;
   }
-  rnet.init(WiFiInfoArgs.ssid->sval[0], WiFiInfoArgs.passwd->sval[0]);
+  rnet.set(WiFiInfoArgs.ssid->sval[0], WiFiInfoArgs.passwd->sval[0]);
   return 0;
 }
 
@@ -107,37 +107,63 @@ static void registerPower(void)
     ESP_ERROR_CHECK(esp_console_cmd_register(&power_cmd));
 }
 
-/*
 static struct {
-    struct arg_str *ssid;
-    struct arg_str *passwd;
     struct arg_end *end;
-} WiFIInfoArgs;
+} WiFiConnectArgs;
 
-static int do_setWiFi_cmd(int argc, char **argv)
+static int do_connectWiFi_cmd(int argc, char **argv)
 {
-int nerrors = arg_parse(argc, argv, (void **)&WiFIInfoArgs);
-if (nerrors != 0) {
-        arg_print_errors(stderr, WiFIInfoArgs.end, argv[0]);
-        return 0;
-    }
+  int nerrors = arg_parse(argc, argv, (void **)&WiFiConnectArgs);
+  if (nerrors != 0) {
+    arg_print_errors(stderr, WiFiConnectArgs.end, argv[0]);
     return 0;
+  }
+  rnet.connect();
+  return 0;
 }
 
-static void registerWiFiInfo(void)
+static void registerWiFiConnect(void)
 {
-  WiFIInfoArgs.ssid = arg_int1("s", "ssid", "<ssid>", "Specify the ssld");
-  WiFIInfoArgs.passwd = arg_int1("p", "password", "<password>", "Specify the password");
-    WiFIInfoArgs.end = arg_end(1);
+    WiFiConnectArgs.end = arg_end(1);
     const esp_console_cmd_t WiFi_cmd = {
-        .command = "wifi",
-        .help = "Set WiFi ssid and password.",
+        .command = "connect",
+        .help = "Connect the Internet",
         .hint = NULL,
-        .func = &do_setWiFi_cmd,
-        .argtable = &WiFIInfoArgs
+        .func = &do_connectWiFi_cmd,
+        .argtable = &WiFiConnectArgs
     };
     ESP_ERROR_CHECK(esp_console_cmd_register(&WiFi_cmd));
 }
+
+static struct {
+    struct arg_end *end;
+} WiFiDisconnectArgs;
+
+static int do_disconnectWiFi_cmd(int argc, char **argv)
+{
+  int nerrors = arg_parse(argc, argv, (void **)&WiFiDisconnectArgs);
+  if (nerrors != 0) {
+    arg_print_errors(stderr, WiFiDisconnectArgs.end, argv[0]);
+    return 0;
+  }
+  rnet.disconnect();
+  return 0;
+}
+
+static void registerWiFiDisconnect(void)
+{
+    WiFiDisconnectArgs.end = arg_end(1);
+    const esp_console_cmd_t WiFi_cmd = {
+        .command = "disconnect",
+        .help = "Disonnect the Internet",
+        .hint = NULL,
+        .func = &do_disconnectWiFi_cmd,
+        .argtable = &WiFiDisconnectArgs
+    };
+    ESP_ERROR_CHECK(esp_console_cmd_register(&WiFi_cmd));
+}
+
+/*
 static struct {
     struct arg_int *ssid;
     struct arg_int *passwd;
@@ -367,5 +393,7 @@ int RadioConsole::register_cmd() {
   registerWiFiInfo();
   registerTune();
   registerPower();
+  registerWiFiConnect();
+  registerWiFiDisconnect();
   return 0;
 }

@@ -19,6 +19,7 @@ Internet and analogue BCL Radio startup functions
 #include "esp_vfs_fat.h"
 #include "AKC6955.hxx"
 #include "RadioConsole.hxx"
+#include "Network.hxx"
 #include "vars.h"
 const char *TAG = "startup";
 
@@ -96,6 +97,7 @@ void app_main(void)
   Radio.powerOn();
   initialize_filesystem();
   rcon.init();
+  rnet.init();
   std::cout << "Other functions" << std::endl;
 }
 }

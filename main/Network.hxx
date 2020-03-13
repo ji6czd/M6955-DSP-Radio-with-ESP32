@@ -4,8 +4,9 @@
 
 class RadioNetwork {
 public:
+  int init();
+  int set(const char* ssid, const char* passwd);
   int connect();
-  int init(const char* ssid, const char* passwd);
   int disconnect();
 };
 
