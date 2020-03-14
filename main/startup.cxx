@@ -98,6 +98,7 @@ void app_main(void)
   initialize_filesystem();
   rcon.init();
   rnet.init();
+  rnet.connect();
   std::cout << "Other functions" << std::endl;
 }
 }
