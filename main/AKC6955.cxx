@@ -11,6 +11,7 @@ AKC6955 controle
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "vars.h"
 #include "AKC6955.hxx"
 
 #define I2C_MASTER_TX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
@@ -109,22 +110,22 @@ int AKC6955::write(uint8_t memory_address, uint8_t value)
   if (ret == ESP_FAIL) {
     return ret;
   }
-  vTaskDelay(30 / portTICK_RATE_MS);
+  vTaskDelay(5 / portTICK_RATE_MS);
   return ESP_OK;
 }
 
 int AKC6955::powerOn()
 {
-  gpio_set_level(GPIO_NUM_14, 1);
-  vTaskDelay(30 / portTICK_RATE_MS);
+  gpio_set_level(POWER_ON, 1);
+  vTaskDelay(10 / portTICK_RATE_MS);
   // Clear mute
   return write(AKC6955_CONFIG, 0xc8);
 }
 
 int AKC6955::powerOff()
 {
-  gpio_set_level(GPIO_NUM_14, 0);
-  vTaskDelay(30 / portTICK_RATE_MS);
+  gpio_set_level(POWER_ON, 0);
+  vTaskDelay(10 / portTICK_RATE_MS);
   return 0;
 }
 

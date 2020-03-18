@@ -25,29 +25,23 @@ const char *TAG = "startup";
 
 int initPeripherals()
 {
-  gpio_config_t io_conf;
-  // output GPIO config
-  //disable interrupt
-  io_conf.intr_type = GPIO_INTR_DISABLE;
-  //set as output mode
-  io_conf.mode = GPIO_MODE_OUTPUT;
-  io_conf.pin_bit_mask = (1ULL << 14);
-  //disable pull-down mode
-  io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  //disable pull-up mode
-  io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-  //configure GPIO with the given settings
-  gpio_config(&io_conf);
-  // output GPIO configuration
-  io_conf.mode = GPIO_MODE_INPUT;
-  io_conf.pin_bit_mask = 0ULL;
-  io_conf.pin_bit_mask = (1ULL << 25) | (1ULL << 26) | (1ULL << 27);
-  //disable pull-down mode
-  io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
-  //enable pull-up mode
-  io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
-  //configure GPIO with the given settings
-  gpio_config(&io_conf);
+  gpio_config_t
+    o_conf {
+	    .pin_bit_mask = (1ULL << POWER_ON),
+	    .mode = GPIO_MODE_OUTPUT,
+	    .pull_up_en = GPIO_PULLUP_DISABLE,
+	    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+  };
+  gpio_config(&o_conf);
+  // Input GPIO configuration
+  gpio_config_t
+    i_conf {
+	    .pin_bit_mask = (1ULL << POWER_SW | 1ULL << ENC_A | 1ULL << ENC_B),
+	    .mode = GPIO_MODE_INPUT,
+	    .pull_up_en = GPIO_PULLUP_ENABLE,
+	    .pull_down_en = GPIO_PULLDOWN_DISABLE
+  };
+  gpio_config(&i_conf);
   // I2C configuration
   i2c_config_t conf;
   conf.mode = I2C_MODE_MASTER;
@@ -92,10 +86,10 @@ void app_main(void)
 {
   ESP_LOGI(TAG, "Starting BCL Radio!\n");
   initNVS();
+  initialize_filesystem();
   initPeripherals();
   Radio.Init();
   Radio.powerOn();
-  initialize_filesystem();
   rcon.init();
   rnet.init();
   rnet.connect();

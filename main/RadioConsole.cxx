@@ -163,37 +163,34 @@ static void registerWiFiDisconnect(void)
     ESP_ERROR_CHECK(esp_console_cmd_register(&WiFi_cmd));
 }
 
-/*
 static struct {
-    struct arg_int *ssid;
-    struct arg_int *passwd;
     struct arg_end *end;
-}  WiFIInfoArgs;
+}  ChUpArgs;
 
-static int do_setWiFi_cmd(int argc, char **argv)
+static int do_setChUp_cmd(int argc, char **argv)
 {
-    int nerrors = arg_parse(argc, argv, (void **)&WiFIInfoArgs);
+    int nerrors = arg_parse(argc, argv, (void **)&ChUpArgs);
     if (nerrors != 0) {
-        arg_print_errors(stderr, WiFIInfoArgs.end, argv[0]);
+        arg_print_errors(stderr, ChUpArgs.end, argv[0]);
         return 0;
     }
     return 0;
 }
 
-static void registerWiFiInfo(void)
+static void registerChUp(void)
 {
-  WiFIInfoArgs.ssid = arg_int1("s", "ssid", "<ssid>", "Specify the ssld");
-  WiFIInfoArgs.passwd = arg_int1("p", "password", "<password>", "Specify the password");
-    WiFIInfoArgs.end = arg_end(1);
-    const esp_console_cmd_t WiFi_cmd = {
-        .command = "wifi",
-        .help = "Set WiFi ssid and password.",
+  ChUpArgs.end = arg_end(1);
+  const esp_console_cmd_t ChUp_cmd = {
+        .command = "n",
+        .help = "Next channel.",
         .hint = NULL,
-        .func = &do_setWiFi_cmd,
-        .argtable = &WiFIInfoArgs
+        .func = &do_setChUp_cmd,
+        .argtable = &ChUpArgs
     };
-    ESP_ERROR_CHECK(esp_console_cmd_register(&WiFi_cmd));
+    ESP_ERROR_CHECK(esp_console_cmd_register(&ChUp_cmd));
 }
+
+/*
 static struct {
     struct arg_int *ssid;
     struct arg_int *passwd;
