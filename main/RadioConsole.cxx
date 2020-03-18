@@ -190,6 +190,33 @@ static void registerChUp(void)
     ESP_ERROR_CHECK(esp_console_cmd_register(&ChUp_cmd));
 }
 
+static struct {
+    struct arg_end *end;
+}  ChDownArgs;
+
+static int do_setChDown_cmd(int argc, char **argv)
+{
+    int nerrors = arg_parse(argc, argv, (void **)&ChDownArgs);
+    if (nerrors != 0) {
+        arg_print_errors(stderr, ChDownArgs.end, argv[0]);
+        return 0;
+    }
+    return 0;
+}
+
+static void registerChDown(void)
+{
+  ChDownArgs.end = arg_end(1);
+  const esp_console_cmd_t ChDown_cmd = {
+        .command = "p",
+        .help = "Previous channel.",
+        .hint = NULL,
+        .func = &do_setChDown_cmd,
+        .argtable = &ChDownArgs
+    };
+    ESP_ERROR_CHECK(esp_console_cmd_register(&ChDown_cmd));
+}
+
 /*
 static struct {
     struct arg_int *ssid;
@@ -392,5 +419,7 @@ int RadioConsole::register_cmd() {
   registerPower();
   registerWiFiConnect();
   registerWiFiDisconnect();
+  registerChUp();
+  registerChDown();
   return 0;
 }
