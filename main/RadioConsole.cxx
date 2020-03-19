@@ -56,6 +56,7 @@ static int do_Tune_cmd(int argc, char **argv)
         arg_print_errors(stderr, tuneArgs.end, argv[0]);
         return 0;
     }
+    Radio.setFreq(tuneArgs.freq->ival[0]); 
     return 0;
 }
 

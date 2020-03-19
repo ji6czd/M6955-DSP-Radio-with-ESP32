@@ -91,6 +91,30 @@ BandPlan bpFM[] =
 	 0,0,0
 	};
 
+bool AKC6955::isAM3KMode()
+{
+  uint8_t c;
+  read(AKC6955_CNR_AM, &c);
+  return c & 0x80;
+}
+
+void AKC6955::doTune(bool mode)
+{
+  akc6955Config cfg;
+  cfg.bits.power=1;
+  cfg.bits.fm_en = mode;
+  cfg.bits.tune=0;
+  write(AKC6955_CONFIG, cfg.byte);
+  cfg.bits.tune=1;
+  write(AKC6955_CONFIG, cfg.byte);
+  cfg.bits.tune=0;
+  write(AKC6955_CONFIG, cfg.byte);
+  uint8_t c=0;
+  while (!(c & 0x40)) {
+    read(AKC6955_RCH_HI, &c);
+  }
+}
+
 int AKC6955::Init()
 {
   return 0;
@@ -110,7 +134,25 @@ int AKC6955::write(uint8_t memory_address, uint8_t value)
   if (ret == ESP_FAIL) {
     return ret;
   }
-  vTaskDelay(5 / portTICK_RATE_MS);
+  vTaskDelay(10 / portTICK_RATE_MS);
+  return ESP_OK;
+}
+
+int AKC6955::read(uint8_t memory_address, uint8_t *value)
+{
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  ESP_ERROR_CHECK(i2c_master_start(cmd));
+  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_READ, 0x1));
+  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, memory_address, ACK_CHECK_EN));
+  ESP_ERROR_CHECK(i2c_master_read_byte(cmd, value, I2C_MASTER_ACK));
+  ESP_ERROR_CHECK(i2c_master_stop(cmd));
+  ESP_ERROR_CHECK(i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS));
+  i2c_cmd_link_delete(cmd);
+  int ret=0;
+  if (ret == ESP_FAIL) {
+    return ret;
+  }
+  vTaskDelay(10 / portTICK_RATE_MS);
   return ESP_OK;
 }
 
@@ -126,6 +168,41 @@ int AKC6955::powerOff()
 {
   gpio_set_level(POWER_ON, 0);
   vTaskDelay(10 / portTICK_RATE_MS);
+  return 0;
+}
+
+uint16_t AKC6955::setCh(uint16_t ch)
+{
+  akc6955Config cfg;
+  read(AKC6955_CONFIG, &cfg.byte);
+  uint8_t c;
+  read(AKC6955_CH_HI, &c); // 設定値保存
+  c &= 0b11100000; // 上位3ビットだけを保存
+  ch &= 0x1fff; // 先頭の3ビットはチャネル番号ではない
+  write(AKC6955_CH_LO, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
+  ch = ch >> 8;
+  ch = ch | c;
+  write(AKC6955_CH_HI, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
+  doTune(cfg.bits.fm_en);
+  return ch;
+}
+
+int AKC6955::setFreq(uint32_t freq)
+{
+  uint16_t ch;
+  if (freq < 30000) {
+    // LF,MF,HF	aM Mode
+    if (isAM3KMode()) {
+      ch = freq / 3;
+    } else {
+      ch = freq / 5;
+    }
+  } else {
+    // VHF FM
+    freq -= 30000;
+    ch = freq / 25;
+  }
+  setCh(ch);
   return 0;
 }
 
