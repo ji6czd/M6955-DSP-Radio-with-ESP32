@@ -140,18 +140,16 @@ int AKC6955::write(uint8_t memory_address, uint8_t value)
 
 int AKC6955::read(uint8_t memory_address, uint8_t *value)
 {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  ESP_ERROR_CHECK(i2c_master_start(cmd));
-  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_READ, 0x1));
-  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, memory_address, ACK_CHECK_EN));
-  ESP_ERROR_CHECK(i2c_master_read_byte(cmd, value, I2C_MASTER_ACK));
-  ESP_ERROR_CHECK(i2c_master_stop(cmd));
-  ESP_ERROR_CHECK(i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS));
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN);
+  i2c_master_write_byte(cmd, memory_address, ACK_CHECK_EN);
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_READ, ACK_CHECK_EN);
+  i2c_master_read_byte(cmd, value, I2C_MASTER_NACK);
+  i2c_master_stop(cmd);
+  esp_err_t ret = i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
   i2c_cmd_link_delete(cmd);
-  int ret=0;
-  if (ret == ESP_FAIL) {
-    return ret;
-  }
   vTaskDelay(10 / portTICK_RATE_MS);
   return ESP_OK;
 }
@@ -161,7 +159,16 @@ int AKC6955::powerOn()
   gpio_set_level(POWER_ON, 1);
   vTaskDelay(10 / portTICK_RATE_MS);
   // Clear mute
-  return write(AKC6955_CONFIG, 0xc8);
+  write(AKC6955_CONFIG, 0xc8);
+  uint8_t st;
+  read(AKC6955_VOLUME, &st);
+  st &= 0xfe;
+  write(AKC6955_VOLUME, st);
+  st = read(AKC6955_PRE, &st);
+  st &= 0xf3;
+  st |= 0b1000;
+  write(AKC6955_VOLUME, st);
+  return 0;
 }
 
 int AKC6955::powerOff()
@@ -169,6 +176,24 @@ int AKC6955::powerOff()
   gpio_set_level(POWER_ON, 0);
   vTaskDelay(10 / portTICK_RATE_MS);
   return 0;
+}
+
+void AKC6955::printStatus()
+{
+  akc6955Config cfg;
+  read(AKC6955_CONFIG, &cfg.byte);
+  if (cfg.bits.fm_en) {
+    ESP_LOGI("Radio", "FM mode.");
+  } else {
+    ESP_LOGI("Radio", "AM mode.");
+  }    
+  uint8_t c;
+  read(AKC6955_CH_HI, &c);
+  c &= 0x1fff; // 先頭の3ビットはチャネル番号ではない
+  ch = c >> 8;
+  read(AKC6955_CH_LO, &c);
+  ch = ch | c;
+  ESP_LOGI("Radio", "Channel: %d", ch);
 }
 
 uint16_t AKC6955::setCh(uint16_t ch)
@@ -187,10 +212,21 @@ uint16_t AKC6955::setCh(uint16_t ch)
   return ch;
 }
 
+
+bool AKC6955::setMode(bool mode)
+{
+  akc6955Config cfg;
+  read(AKC6955_CONFIG, &cfg.byte);
+  cfg.bits.fm_en = mode;
+  doTune(mode);
+  return cfg.bits.fm_en;
+}
+
 int AKC6955::setFreq(uint32_t freq)
 {
   uint16_t ch;
   if (freq < 30000) {
+    setMode(false);
     // LF,MF,HF	aM Mode
     if (isAM3KMode()) {
       ch = freq / 3;
@@ -199,6 +235,7 @@ int AKC6955::setFreq(uint32_t freq)
     }
   } else {
     // VHF FM
+    setMode(true);
     freq -= 30000;
     ch = freq / 25;
   }

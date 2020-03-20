@@ -16,14 +16,15 @@ public:
   int Init();
   int powerOn();
   int powerOff();
-  int setMode(mod_t md){return 0;};
-  mode_t getMode(){return 0;};
+  bool setMode(bool md);
+ bool getMode(){return 0;};
   int setBand(band_t bn){return 0;};
   uint32_t getFreq(){return 0;};
   int setFreq(uint32_t freq);
   uint16_t setCh(const uint16_t ch);
   uint32_t chUp(){return 0;};
   uint32_t chDown(){return 0;};
+  void printStatus();
 private:
   uint32_t freq;
   uint16_t ch;

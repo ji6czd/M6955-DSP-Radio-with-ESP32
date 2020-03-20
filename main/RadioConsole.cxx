@@ -218,37 +218,35 @@ static void registerChDown(void)
     ESP_ERROR_CHECK(esp_console_cmd_register(&ChDown_cmd));
 }
 
-/*
 static struct {
-    struct arg_int *ssid;
-    struct arg_int *passwd;
     struct arg_end *end;
-}  WiFIInfoArgs;
+} StatArgs;
 
-static int do_setWiFi_cmd(int argc, char **argv)
+static int do_Stat_cmd(int argc, char **argv)
 {
-    int nerrors = arg_parse(argc, argv, (void **)&WiFIInfoArgs);
-    if (nerrors != 0) {
-        arg_print_errors(stderr, WiFIInfoArgs.end, argv[0]);
-        return 0;
-    }
+  int nerrors = arg_parse(argc, argv, (void **)&StatArgs);
+  if (nerrors != 0) {
+    arg_print_errors(stderr, StatArgs.end, argv[0]);
     return 0;
+  }
+  Radio.printStatus();
+  return 0;
 }
 
-static void registerWiFiInfo(void)
+static void registerStat(void)
 {
-  WiFIInfoArgs.ssid = arg_int1("s", "ssid", "<ssid>", "Specify the ssld");
-  WiFIInfoArgs.passwd = arg_int1("p", "password", "<password>", "Specify the password");
-    WiFIInfoArgs.end = arg_end(1);
-    const esp_console_cmd_t WiFi_cmd = {
-        .command = "wifi",
-        .help = "Set WiFi ssid and password.",
+    StatArgs.end = arg_end(1);
+    const esp_console_cmd_t Stat_cmd = {
+        .command = "stat",
+        .help = "Print current channel and freq, etc.",
         .hint = NULL,
-        .func = &do_setWiFi_cmd,
-        .argtable = &WiFIInfoArgs
+        .func = &do_Stat_cmd,
+        .argtable = &StatArgs
     };
-    ESP_ERROR_CHECK(esp_console_cmd_register(&WiFi_cmd));
+    ESP_ERROR_CHECK(esp_console_cmd_register(&Stat_cmd));
 }
+
+/*
 static struct {
     struct arg_int *ssid;
     struct arg_int *passwd;
@@ -422,5 +420,6 @@ int RadioConsole::register_cmd() {
   registerWiFiDisconnect();
   registerChUp();
   registerChDown();
+  registerStat();
   return 0;
 }
