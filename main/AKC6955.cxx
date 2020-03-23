@@ -134,7 +134,7 @@ int AKC6955::write(uint8_t memory_address, uint8_t value)
   if (ret == ESP_FAIL) {
     return ret;
   }
-  vTaskDelay(10 / portTICK_RATE_MS);
+  vTaskDelay(50 / portTICK_RATE_MS);
   return ESP_OK;
 }
 
@@ -182,18 +182,26 @@ void AKC6955::printStatus()
 {
   akc6955Config cfg;
   read(AKC6955_CONFIG, &cfg.byte);
-  if (cfg.bits.fm_en) {
-    ESP_LOGI("Radio", "FM mode.");
-  } else {
-    ESP_LOGI("Radio", "AM mode.");
-  }    
   uint8_t c;
   read(AKC6955_CH_HI, &c);
-  c &= 0x1fff; // 先頭の3ビットはチャネル番号ではない
-  ch = c >> 8;
+  c &= 0b00011111; // 先頭の3ビットはチャネル番号ではない
+  ch = c;
+  ch = ch << 8;
   read(AKC6955_CH_LO, &c);
   ch = ch | c;
   ESP_LOGI("Radio", "Channel: %d", ch);
+  akc6955Band b;
+  read(AKC6955_BAND, &b.byte);
+  if (cfg.bits.fm_en) {
+    ESP_LOGI("Radio", "FM mode.");
+    ESP_LOGI("Radio", "Band: %d", b.bits.fm);
+  } else {
+    ESP_LOGI("Radio", "AM mode.");
+    ESP_LOGI("Radio", "Band: %d", b.bits.am);
+  }
+  if (isAM3KMode()) {
+      ESP_LOGI("Radio", "3K step mode");
+    }
 }
 
 uint16_t AKC6955::setCh(uint16_t ch)
@@ -213,7 +221,7 @@ uint16_t AKC6955::setCh(uint16_t ch)
 }
 
 
-bool AKC6955::setMode(bool mode)
+bool AKC6955::setMode(mode_t mode)
 {
   akc6955Config cfg;
   read(AKC6955_CONFIG, &cfg.byte);
@@ -225,21 +233,27 @@ bool AKC6955::setMode(bool mode)
 int AKC6955::setFreq(uint32_t freq)
 {
   uint16_t ch;
-  if (freq < 30000) {
+  akc6955Band b;
+    if (freq < 30000) {
     setMode(false);
     // LF,MF,HF	aM Mode
-    if (isAM3KMode()) {
+    if (freq < 1629) {
       ch = freq / 3;
+      b.bits.am = 2;
     } else {
       ch = freq / 5;
+      b.bits.am = 3;
     }
   } else {
     // VHF FM
     setMode(true);
     freq -= 30000;
     ch = freq / 25;
+    b.bits.fm = 1;
   }
+  write(AKC6955_BAND, b.byte);
   setCh(ch);
+  printStatus();
   return 0;
 }
 
