@@ -33,7 +33,6 @@ public:
   void init(gpio_num_t gpioPin, panel_cmd cmd) { pin = gpioPin; cmdId = cmd;};
   void checkState();
   bool isInit() { return pin ? true : false; };
-  uint16_t getCount() { return count; };
 private:
   int cmdtoQueue();
   uint16_t count;
@@ -60,6 +59,21 @@ void TactSwitch::checkState()
 }
 
 TactSwitch sw[10];
+
+class RotaryEncoder {
+public:
+  void init(gpio_num_t gpioPinA, gpio_num_t gpioPinB, panel_cmd cmdIdA, panel_cmd cmdIdB) {
+    pinA = gpioPinA; pinB = gpioPinB;
+    cmdA = cmdIdA; cmdB = cmdIdB;
+  };
+  void checkState() { return; };
+  bool isInit() { return pinA ? true : false; };
+private:
+  int cmdtoQueue() {return 0;};
+  uint16_t countA, countB;
+  panel_cmd cmdA, cmdB;
+  gpio_num_t pinA, pinB;
+};
 
 /* non-class Functions */
 

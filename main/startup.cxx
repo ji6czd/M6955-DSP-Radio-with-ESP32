@@ -89,13 +89,13 @@ void app_main(void)
   ESP_LOGI(TAG, "Starting BCL Radio!\n");
   initNVS();
   initialize_filesystem();
+  rnet.init();
+  rnet.connect();
   initPeripherals();
   Radio.Init();
   Radio.powerOn();
   rcon.init();
   rpan.init();
-  //rnet.init();
-  //rnet.connect();
   std::cout << "Other functions" << std::endl;
 }
 }
