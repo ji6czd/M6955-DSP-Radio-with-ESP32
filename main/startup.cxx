@@ -17,11 +17,13 @@ Internet and analogue BCL Radio startup functions
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_vfs_fat.h"
+#include "vars.h"
 #include "AKC6955.hxx"
 #include "RadioConsole.hxx"
 #include "Network.hxx"
-#include "vars.h"
-const char *TAG = "startup";
+#include "Panel.hxx"
+
+const char *TAG = "radio";
 
 int initPeripherals()
 {
@@ -91,8 +93,9 @@ void app_main(void)
   Radio.Init();
   Radio.powerOn();
   rcon.init();
-  rnet.init();
-  rnet.connect();
+  rpan.init();
+  //rnet.init();
+  //rnet.connect();
   std::cout << "Other functions" << std::endl;
 }
 }

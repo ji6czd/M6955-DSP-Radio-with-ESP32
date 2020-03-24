@@ -111,6 +111,7 @@ void AKC6955::doTune(bool mode)
   write(AKC6955_CONFIG, cfg.byte);
   uint8_t c=0;
   while (!(c & 0x40)) {
+    vTaskDelay(10 / portTICK_RATE_MS);
     read(AKC6955_RCH_HI, &c);
   }
 }
@@ -134,7 +135,7 @@ int AKC6955::write(uint8_t memory_address, uint8_t value)
   if (ret == ESP_FAIL) {
     return ret;
   }
-  vTaskDelay(50 / portTICK_RATE_MS);
+  vTaskDelay(1 / portTICK_RATE_MS);
   return ESP_OK;
 }
 
@@ -150,14 +151,14 @@ int AKC6955::read(uint8_t memory_address, uint8_t *value)
   i2c_master_stop(cmd);
   esp_err_t ret = i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
   i2c_cmd_link_delete(cmd);
-  vTaskDelay(10 / portTICK_RATE_MS);
+  vTaskDelay(1 / portTICK_RATE_MS);
   return ESP_OK;
 }
 
 int AKC6955::powerOn()
 {
   gpio_set_level(POWER_ON, 1);
-  vTaskDelay(10 / portTICK_RATE_MS);
+  vTaskDelay(1 / portTICK_RATE_MS);
   // Clear mute
   write(AKC6955_CONFIG, 0xc8);
   uint8_t st;
@@ -173,8 +174,20 @@ int AKC6955::powerOn()
 
 int AKC6955::powerOff()
 {
-  gpio_set_level(POWER_ON, 0);
-  vTaskDelay(10 / portTICK_RATE_MS);
+  // Power off
+  write(AKC6955_CONFIG, 0x48);
+  return 0;
+}
+
+int AKC6955::powerToggle()
+{
+  akc6955Config cfg;
+  read(AKC6955_CONFIG, &cfg.byte);
+  if (cfg.bits.power) {
+    powerOff();
+  } else {
+    powerOn();
+  }
   return 0;
 }
 

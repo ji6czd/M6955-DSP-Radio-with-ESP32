@@ -66,6 +66,7 @@ public:
   int Init();
   int powerOn();
   int powerOff();
+  int powerToggle();
   bool setMode(mode_t md);
   mode_t getMode(){return 0;};
   int setBand(band_t bn){return 0;};
@@ -76,6 +77,7 @@ public:
   uint32_t chDown(){return 0;};
   void printStatus();
 private:
+  bool powerStat;
   uint32_t freq;
   uint16_t ch;
   int write(const uint8_t memory_address, const uint8_t value);
