@@ -34,16 +34,15 @@ public:
   void checkState();
   bool isInit() { return pin ? true : false; };
 private:
-  int cmdtoQueue();
+  void cmdtoQueue();
   uint16_t count;
   panel_cmd cmdId;
   gpio_num_t pin;
 };
 
-int TactSwitch::cmdtoQueue()
+void TactSwitch::cmdtoQueue()
 {
   xQueueSendFromISR(cmd_queue, &cmdId, NULL);
-  return 0;
 }
 
 void TactSwitch::checkState()
@@ -66,17 +65,48 @@ public:
     pinA = gpioPinA; pinB = gpioPinB;
     cmdA = cmdIdA; cmdB = cmdIdB;
   };
-  void checkState() { return; };
+  void checkState();
   bool isInit() { return pinA ? true : false; };
 private:
-  int cmdtoQueue() {return 0;};
+  void cmdtoQueue();
   uint16_t countA, countB;
   panel_cmd cmdA, cmdB;
   gpio_num_t pinA, pinB;
+	bool statA, statB;
+	int8_t dir=0;
 };
 
-/* non-class Functions */
+void RotaryEncoder::checkState()
+{
+	// ピンがLowになっている時間を記録
+	(!gpio_get_level(pinA)) ? countA++ : countA=0;
+	(!gpio_get_level(pinB)) ? countB++ : countB=0;
 
+	// 方向判定
+	if (!dir && statA && !statB) dir=1;
+	else if (dir == 1 && statB) dir=2;
+	else if (dir == 2 && !statA) dir=3; // これで右回転
+	else if (dir == 3 && !statB) dir=4; // これで右回転
+	else if (!dir && statB && !statA) dir=-1;
+	else if (dir == -1 && statA) dir=-2;
+	else if(dir == -2 && !statB) dir=-3; // 左回転
+	else if(dir == -3 && !statA) dir=-4; // 左回転
+	else if (!statA && !statB) dir=0;
+	// ピンステータスセット
+	(countA > 50) ? statA = true : statA = false;
+	(countB > 50) ? statB = true : statB = false;
+	cmdtoQueue();
+}
+
+void RotaryEncoder::cmdtoQueue()
+{
+	if (dir == 4) xQueueSendFromISR(cmd_queue, &cmdA, NULL);
+	else if (dir == -4) xQueueSendFromISR(cmd_queue, &cmdB, NULL);
+}
+
+RotaryEncoder enc[4];
+
+/* non-class Functions */
 void timer_isr(void *para)
 {
   timer_spinlock_take(TIMER_GROUP_0);
@@ -84,6 +114,7 @@ void timer_isr(void *para)
   for (uint8_t i=0; sw[i].isInit(); i++) {
     sw[i].checkState();
   }
+	enc[0].checkState();
   timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
   timer_group_enable_alarm_in_isr(TIMER_GROUP_0, TIMER_0);
   timer_spinlock_give(TIMER_GROUP_0);
@@ -93,7 +124,7 @@ Panel rpan;
 void Panel::init()
 {
   ESP_LOGI("Panel", "Initializing...");
-  cmd_queue = xQueueCreate(4, sizeof(panel_cmd));
+  cmd_queue = xQueueCreate(16, sizeof(panel_cmd));
   timer_config_t
     tm {
 	.alarm_en = TIMER_ALARM_EN,
@@ -109,8 +140,7 @@ void Panel::init()
   timer_enable_intr(TIMER_GROUP_0, TIMER_0);
   timer_start(TIMER_GROUP_0, TIMER_0);
   sw[0].init(GPIO_NUM_23, panel_cmd::power_on); // Power
-  sw[1].init(GPIO_NUM_12, panel_cmd::up); // encoder
-  sw[2].init(GPIO_NUM_13, panel_cmd::down); // encoder
+	enc[0].init(GPIO_NUM_12, GPIO_NUM_13, panel_cmd::up, panel_cmd::down);
   xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
 }
 
@@ -124,10 +154,13 @@ void Panel::panel_main(void* args)
       ESP_LOGI("Panel", "Power On");
       Radio.powerToggle();
       break;
-      case panel_cmd::power_off:
-      ESP_LOGI("Panel", "Power Off");
+		case panel_cmd::up:
+			Radio.chUp();
       break;
-      default:
+		case panel_cmd::down:
+      Radio.chDown();
+      break;
+		default:
 	ESP_LOGI("Panel", "other command");
     }
   }

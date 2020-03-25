@@ -73,8 +73,9 @@ public:
   uint32_t getFreq(){return 0;};
   int setFreq(uint32_t freq);
   uint16_t setCh(const uint16_t ch);
-  uint32_t chUp(){return 0;};
-  uint32_t chDown(){return 0;};
+  uint16_t getCh();
+  void chUp();
+  void chDown();
   void printStatus();
 private:
   bool powerStat;

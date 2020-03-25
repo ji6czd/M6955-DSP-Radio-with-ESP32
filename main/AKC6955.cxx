@@ -111,7 +111,7 @@ void AKC6955::doTune(bool mode)
   write(AKC6955_CONFIG, cfg.byte);
   uint8_t c=0;
   while (!(c & 0x40)) {
-    vTaskDelay(10 / portTICK_RATE_MS);
+    vTaskDelay(20 / portTICK_RATE_MS);
     read(AKC6955_RCH_HI, &c);
   }
 }
@@ -233,6 +233,32 @@ uint16_t AKC6955::setCh(uint16_t ch)
   return ch;
 }
 
+uint16_t AKC6955::getCh()
+{
+  uint16_t ch=0;
+  uint8_t c;
+  read(AKC6955_CH_HI, &c);
+  c &= 0b00011111; // 先頭の3ビットはチャネル番号ではない
+  ch = c;
+  ch = ch << 8;
+  read(AKC6955_CH_LO, &c);
+  ch = ch | c;
+  return ch;
+}
+
+void AKC6955::chUp()
+{
+  uint16_t ch = getCh();
+  ch++;
+  setCh(ch);
+}
+
+void AKC6955::chDown()
+{
+  uint16_t ch = getCh();
+  ch--;
+  setCh(ch);
+}
 
 bool AKC6955::setMode(mode_t mode)
 {
