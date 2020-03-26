@@ -68,23 +68,27 @@ public:
   int powerOff();
   int powerToggle();
   bool setMode(mode_t md);
-  mode_t getMode(){return 0;};
-  int setBand(band_t bn){return 0;};
-  uint32_t getFreq(){return 0;};
+  mode_t getMode() { return mode; };
+  int setBand(akc6955Band bn);
+  akc6955Band getBand() { return band; };
+  uint32_t getFreq(){return frequency;};
   int setFreq(uint32_t freq);
   uint16_t setCh(const uint16_t ch);
-  uint16_t getCh();
+  uint16_t getCh() { return channel; };
   void chUp();
   void chDown();
   void printStatus();
 private:
-  bool powerStat;
-  uint32_t freq;
-  uint16_t ch;
+  bool powerStatus;
+  uint32_t frequency;
+  uint16_t channel;
+  akc6955Band band;
+  mode_t mode;
   int write(const uint8_t memory_address, const uint8_t value);
   int read(const uint8_t memory_address, uint8_t *value);
     bool isAM3KMode();
     void doTune(bool mode);
+  uint16_t getRealCh();
 };
 
 extern AKC6955 Radio;

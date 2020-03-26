@@ -160,7 +160,11 @@ int AKC6955::powerOn()
   gpio_set_level(POWER_ON, 1);
   vTaskDelay(1 / portTICK_RATE_MS);
   // Clear mute
-  write(AKC6955_CONFIG, 0xc8);
+  akc6955Config cfg;
+  read(AKC6955_CONFIG, &cfg.byte);
+  cfg.bits.power = 1;
+  cfg.bits.mute = 0;
+  write(AKC6955_CONFIG, cfg.byte);
   uint8_t st;
   read(AKC6955_VOLUME, &st);
   st &= 0xfe;
@@ -175,7 +179,10 @@ int AKC6955::powerOn()
 int AKC6955::powerOff()
 {
   // Power off
-  write(AKC6955_CONFIG, 0x48);
+  akc6955Config cfg;
+  read(AKC6955_CONFIG, &cfg.byte);
+  cfg.bits.power = 0;
+  write(AKC6955_CONFIG, cfg.byte);
   return 0;
 }
 
@@ -193,19 +200,10 @@ int AKC6955::powerToggle()
 
 void AKC6955::printStatus()
 {
-  akc6955Config cfg;
-  read(AKC6955_CONFIG, &cfg.byte);
-  uint8_t c;
-  read(AKC6955_CH_HI, &c);
-  c &= 0b00011111; // 先頭の3ビットはチャネル番号ではない
-  ch = c;
-  ch = ch << 8;
-  read(AKC6955_CH_LO, &c);
-  ch = ch | c;
-  ESP_LOGI("Radio", "Channel: %d", ch);
+  ESP_LOGI("Radio", "Channel: %d", getCh());
   akc6955Band b;
-  read(AKC6955_BAND, &b.byte);
-  if (cfg.bits.fm_en) {
+  b = getBand();
+  if (getMode()) {
     ESP_LOGI("Radio", "FM mode.");
     ESP_LOGI("Radio", "Band: %d", b.bits.fm);
   } else {
@@ -213,8 +211,8 @@ void AKC6955::printStatus()
     ESP_LOGI("Radio", "Band: %d", b.bits.am);
   }
   if (isAM3KMode()) {
-      ESP_LOGI("Radio", "3K step mode");
-    }
+    ESP_LOGI("Radio", "3K step mode");
+  }
 }
 
 uint16_t AKC6955::setCh(uint16_t ch)
@@ -230,10 +228,11 @@ uint16_t AKC6955::setCh(uint16_t ch)
   ch = ch | c;
   write(AKC6955_CH_HI, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
   doTune(cfg.bits.fm_en);
+  channel = getRealCh();
   return ch;
 }
 
-uint16_t AKC6955::getCh()
+uint16_t AKC6955::getRealCh()
 {
   uint16_t ch=0;
   uint8_t c;
@@ -243,6 +242,7 @@ uint16_t AKC6955::getCh()
   ch = ch << 8;
   read(AKC6955_CH_LO, &c);
   ch = ch | c;
+  channel = ch;
   return ch;
 }
 
@@ -250,6 +250,17 @@ void AKC6955::chUp()
 {
   uint16_t ch = getCh();
   ch++;
+  akc6955Band b = getBand();
+  
+  if (isAM3KMode() && ch > 1629/3) {
+    b.bits.am = 3;
+    ch = 325;
+  }
+  else if (!getMode() && ch > 30000/5) {
+    setMode(true);
+    ch = 1;
+  }
+  setBand(b);
   setCh(ch);
 }
 
@@ -257,15 +268,34 @@ void AKC6955::chDown()
 {
   uint16_t ch = getCh();
   ch--;
+  akc6955Band b = getBand();
+  if (getMode() && ch == 0) {
+    setMode(false);
+    b.bits.am = 3;
+    ch = 30000/5;
+  }
+  else if (!getMode() && ch < 1630/5) {
+    b.bits.am = 2;
+    ch = 1629/3;
+  }
+  setBand(b);
   setCh(ch);
 }
 
-bool AKC6955::setMode(mode_t mode)
+int AKC6955::setBand(akc6955Band bn)
+{
+  write(AKC6955_BAND, bn.byte);
+  band.byte = bn.byte;
+  return 0;
+}
+
+bool AKC6955::setMode(mode_t md)
 {
   akc6955Config cfg;
   read(AKC6955_CONFIG, &cfg.byte);
-  cfg.bits.fm_en = mode;
-  doTune(mode);
+  cfg.bits.fm_en = md;
+  doTune(md);
+  mode = md;
   return cfg.bits.fm_en;
 }
 
@@ -276,7 +306,7 @@ int AKC6955::setFreq(uint32_t freq)
     if (freq < 30000) {
     setMode(false);
     // LF,MF,HF	aM Mode
-    if (freq < 1629) {
+    if (freq <= 1629) {
       ch = freq / 3;
       b.bits.am = 2;
     } else {
@@ -290,7 +320,7 @@ int AKC6955::setFreq(uint32_t freq)
     ch = freq / 25;
     b.bits.fm = 1;
   }
-  write(AKC6955_BAND, b.byte);
+    setBand(b);
   setCh(ch);
   printStatus();
   return 0;

@@ -11,6 +11,7 @@
 #include "driver/timer.h"
 #include "Panel.hxx"
 #include "AKC6955.hxx"
+#include "vars.h"
 
 enum class
 panel_cmd {
@@ -93,8 +94,8 @@ void RotaryEncoder::checkState()
 	else if(dir == -3 && !statA) dir=-4; // 左回転
 	else if (!statA && !statB) dir=0;
 	// ピンステータスセット
-	(countA > 50) ? statA = true : statA = false;
-	(countB > 50) ? statB = true : statB = false;
+	(countA > 30) ? statA = true : statA = false;
+	(countB > 30) ? statB = true : statB = false;
 	cmdtoQueue();
 }
 
@@ -124,7 +125,7 @@ Panel rpan;
 void Panel::init()
 {
   ESP_LOGI("Panel", "Initializing...");
-  cmd_queue = xQueueCreate(16, sizeof(panel_cmd));
+  cmd_queue = xQueueCreate(8, sizeof(panel_cmd));
   timer_config_t
     tm {
 	.alarm_en = TIMER_ALARM_EN,
@@ -139,8 +140,8 @@ void Panel::init()
   timer_isr_register(TIMER_GROUP_0, TIMER_0, timer_isr, NULL, 0, NULL);
   timer_enable_intr(TIMER_GROUP_0, TIMER_0);
   timer_start(TIMER_GROUP_0, TIMER_0);
-  sw[0].init(GPIO_NUM_23, panel_cmd::power_on); // Power
-	enc[0].init(GPIO_NUM_12, GPIO_NUM_13, panel_cmd::up, panel_cmd::down);
+  sw[0].init(POWER_SW, panel_cmd::power_on); // Power
+	enc[0].init(ENC_A, ENC_B, panel_cmd::up, panel_cmd::down);
   xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
 }
 
