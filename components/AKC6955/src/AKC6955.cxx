@@ -130,10 +130,6 @@ int AKC6955::write(uint8_t memory_address, uint8_t value)
   ESP_ERROR_CHECK(i2c_master_stop(cmd));
   ESP_ERROR_CHECK(i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS));
   i2c_cmd_link_delete(cmd);
-  int ret=0;
-  if (ret == ESP_FAIL) {
-    return ret;
-  }
   vTaskDelay(1 / portTICK_RATE_MS);
   return ESP_OK;
 }
