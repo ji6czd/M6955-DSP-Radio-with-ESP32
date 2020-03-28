@@ -7,13 +7,12 @@ AKC6955 controle
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "esp_spi_flash.h"
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-#include "vars.h"
 #include "AKC6955.hxx"
 
+#define POWER_ON GPIO_NUM_19
 #define I2C_MASTER_TX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
 #define I2C_MASTER_RX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
 #define ACK_CHECK_EN 0x1                        /*!< I2C master will check ack from slave*/

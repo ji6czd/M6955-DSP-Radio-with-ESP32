@@ -2,7 +2,6 @@
 #include "argtable3/argtable3.h"
 #include "esp_console.h"
 #include "esp_log.h"
-#include "cmd_system.h"
 #include "AKC6955.hxx"
 #include "Network.hxx"
 #include "RadioConsole.hxx"
@@ -407,7 +406,6 @@ int RadioConsole::init() {
   repl_config.prompt = "radio %";
   repl_config.history_save_path = HISTORY_PATH;
   ESP_ERROR_CHECK(esp_console_repl_init(&repl_config));
-  register_system();
   register_cmd();
   ESP_ERROR_CHECK(esp_console_repl_start());
   return 0;
