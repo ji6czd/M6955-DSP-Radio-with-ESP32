@@ -2,20 +2,14 @@
 AKC6955 controle
 */
 
-#include <iostream>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_system.h"
-#include "driver/i2c.h"
-#include "driver/gpio.h"
 #include "esp_log.h"
+#include "MainBoard.hxx"
 #include "AKC6955.hxx"
 
 #define POWER_ON GPIO_NUM_19
-#define I2C_MASTER_TX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
-#define I2C_MASTER_RX_BUF_DISABLE 0                           /*!< I2C master doesn't need buffer */
-#define ACK_CHECK_EN 0x1                        /*!< I2C master will check ack from slave*/
 
 // Register definitions.
 #define AKC6955_CONFIG  0
@@ -93,7 +87,7 @@ BandPlan bpFM[] =
 bool AKC6955::isAM3KMode()
 {
   uint8_t c;
-  read(AKC6955_CNR_AM, &c);
+  read(AKC6955_CNR_AM, c);
   return c & 0x80;
 }
 
@@ -111,7 +105,7 @@ void AKC6955::doTune(bool mode)
   uint8_t c=0;
   while (!(c & 0x40)) {
     vTaskDelay(20 / portTICK_RATE_MS);
-    read(AKC6955_RCH_HI, &c);
+    read(AKC6955_RCH_HI, c);
   }
 }
 
@@ -122,30 +116,14 @@ int AKC6955::Init()
 
 int AKC6955::write(uint8_t memory_address, uint8_t value)
 {
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  ESP_ERROR_CHECK(i2c_master_start(cmd));
-  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN));
-  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, memory_address, ACK_CHECK_EN));
-  ESP_ERROR_CHECK(i2c_master_write_byte(cmd, value, ACK_CHECK_EN));
-  ESP_ERROR_CHECK(i2c_master_stop(cmd));
-  ESP_ERROR_CHECK(i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS));
-  i2c_cmd_link_delete(cmd);
+  board.i2cWrite(0x10, memory_address, value);
   vTaskDelay(1 / portTICK_RATE_MS);
   return ESP_OK;
 }
 
-int AKC6955::read(uint8_t memory_address, uint8_t *value)
+int AKC6955::read(uint8_t memory_address, uint8_t &value)
 {
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN);
-  i2c_master_write_byte(cmd, memory_address, ACK_CHECK_EN);
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, 0x10 << 1 | I2C_MASTER_READ, ACK_CHECK_EN);
-  i2c_master_read_byte(cmd, value, I2C_MASTER_NACK);
-  i2c_master_stop(cmd);
-  esp_err_t ret = i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
-  i2c_cmd_link_delete(cmd);
+  board.i2cRead(0x10, memory_address, value);
   vTaskDelay(1 / portTICK_RATE_MS);
   return ESP_OK;
 }
@@ -156,15 +134,15 @@ int AKC6955::powerOn()
   vTaskDelay(1 / portTICK_RATE_MS);
   // Clear mute
   akc6955Config cfg;
-  read(AKC6955_CONFIG, &cfg.byte);
+  read(AKC6955_CONFIG, cfg.byte);
   cfg.bits.power = 1;
   cfg.bits.mute = 0;
   write(AKC6955_CONFIG, cfg.byte);
   uint8_t st;
-  read(AKC6955_VOLUME, &st);
+  read(AKC6955_VOLUME, st);
   st &= 0xfe;
   write(AKC6955_VOLUME, st);
-  st = read(AKC6955_PRE, &st);
+  st = read(AKC6955_PRE, st);
   st &= 0xf3;
   st |= 0b1000;
   write(AKC6955_VOLUME, st);
@@ -175,7 +153,7 @@ int AKC6955::powerOff()
 {
   // Power off
   akc6955Config cfg;
-  read(AKC6955_CONFIG, &cfg.byte);
+  read(AKC6955_CONFIG, cfg.byte);
   cfg.bits.power = 0;
   write(AKC6955_CONFIG, cfg.byte);
   return 0;
@@ -184,7 +162,7 @@ int AKC6955::powerOff()
 int AKC6955::powerToggle()
 {
   akc6955Config cfg;
-  read(AKC6955_CONFIG, &cfg.byte);
+  read(AKC6955_CONFIG, cfg.byte);
   if (cfg.bits.power) {
     powerOff();
   } else {
@@ -213,9 +191,9 @@ void AKC6955::printStatus()
 uint16_t AKC6955::setCh(uint16_t ch)
 {
   akc6955Config cfg;
-  read(AKC6955_CONFIG, &cfg.byte);
+  read(AKC6955_CONFIG, cfg.byte);
   uint8_t c;
-  read(AKC6955_CH_HI, &c); // 設定値保存
+  read(AKC6955_CH_HI, c); // 設定値保存
   c &= 0b11100000; // 上位3ビットだけを保存
   ch &= 0x1fff; // 先頭の3ビットはチャネル番号ではない
   write(AKC6955_CH_LO, (uint8_t)ch); // キャストして下位8ビットだけを書き込む
@@ -231,11 +209,11 @@ uint16_t AKC6955::getRealCh()
 {
   uint16_t ch=0;
   uint8_t c;
-  read(AKC6955_CH_HI, &c);
+  read(AKC6955_CH_HI, c);
   c &= 0b00011111; // 先頭の3ビットはチャネル番号ではない
   ch = c;
   ch = ch << 8;
-  read(AKC6955_CH_LO, &c);
+  read(AKC6955_CH_LO, c);
   ch = ch | c;
   channel = ch;
   return ch;
@@ -287,7 +265,7 @@ int AKC6955::setBand(akc6955Band bn)
 bool AKC6955::setMode(mode_t md)
 {
   akc6955Config cfg;
-  read(AKC6955_CONFIG, &cfg.byte);
+  read(AKC6955_CONFIG, cfg.byte);
   cfg.bits.fm_en = md;
   doTune(md);
   mode = md;

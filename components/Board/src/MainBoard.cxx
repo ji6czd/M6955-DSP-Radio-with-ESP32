@@ -70,3 +70,17 @@ esp_err_t MainBoard::i2cWrite(uint8_t Device, uint8_t Register, uint8_t Data)
   i2c_cmd_link_delete(cmd);
   return ESP_OK;
 }
+esp_err_t MainBoard::i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data)
+{
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, Device << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN);
+  i2c_master_write_byte(cmd, Register, ACK_CHECK_EN);
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, Device << 1 | I2C_MASTER_READ, ACK_CHECK_EN);
+  i2c_master_read_byte(cmd, &Data, I2C_MASTER_NACK);
+  i2c_master_stop(cmd);
+  esp_err_t ret = i2c_master_cmd_begin(0, cmd, 1000 / portTICK_RATE_MS);
+  i2c_cmd_link_delete(cmd);
+  return ret;
+}

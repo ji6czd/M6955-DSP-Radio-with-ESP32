@@ -85,7 +85,8 @@ private:
   akc6955Band band;
   mode_t mode;
   int write(const uint8_t memory_address, const uint8_t value);
-  int read(const uint8_t memory_address, uint8_t *value);
+
+  int read(const uint8_t memory_address, uint8_t &value);
     bool isAM3KMode();
     void doTune(bool mode);
   uint16_t getRealCh();
