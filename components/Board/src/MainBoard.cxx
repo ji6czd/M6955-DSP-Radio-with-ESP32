@@ -10,7 +10,8 @@
 #include "esp_vfs_fat.h"
 #include "esp_spi_flash.h"
 #include "MainBoard.hxx"
-#define MOUNT_PATH "/data"
+#include "vars.h"
+
 #define ACK_CHECK_EN 0x1                        /*!< I2C master will check ack from slave*/
 
 static char tag[] = "Mainboard";
@@ -20,9 +21,10 @@ MainBoard board;
 esp_err_t MainBoard::init()
 {
   esp_err_t ret;
-  ret = initialize_filesystem();
-  if (ret == ESP_OK) board.initNVS();
-  if (ret == ESP_OK) ret = i2cInit();
+  ret = initFS();
+  if (ret == ESP_OK) initNVS();
+  if (ret == ESP_OK) ret = initI2C();
+	if (ret == ESP_OK) initGPIO();
   return ret;
 }
 
@@ -38,7 +40,7 @@ esp_err_t MainBoard::initNVS()
   return ret;
 }
 
-esp_err_t MainBoard::initialize_filesystem(void)
+esp_err_t MainBoard::initFS(void)
 {
   wl_handle_t wl_handle;
   const esp_vfs_fat_mount_config_t
@@ -54,7 +56,7 @@ esp_err_t MainBoard::initialize_filesystem(void)
   return err;
 }
 
-int MainBoard::i2cInit()
+int MainBoard::initI2C()
 {
   const i2c_config_t
     conf = {
@@ -83,6 +85,7 @@ esp_err_t MainBoard::i2cWrite(uint8_t Device, uint8_t Register, uint8_t Data)
   i2c_cmd_link_delete(cmd);
   return ESP_OK;
 }
+
 esp_err_t MainBoard::i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data)
 {
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -97,3 +100,26 @@ esp_err_t MainBoard::i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data)
   i2c_cmd_link_delete(cmd);
   return ret;
 }
+
+esp_err_t MainBoard::initGPIO()
+{
+  gpio_config_t
+    o_conf {
+	    .pin_bit_mask = (1ULL << POWER_ON),
+	    .mode = GPIO_MODE_OUTPUT,
+	    .pull_up_en = GPIO_PULLUP_DISABLE,
+	    .pull_down_en = GPIO_PULLDOWN_DISABLE,
+  };
+  gpio_config(&o_conf);
+  // Input GPIO configuration
+  gpio_config_t
+    i_conf {
+	    .pin_bit_mask = (1ULL << POWER_SW | 1ULL << ENC_A | 1ULL << ENC_B),
+	    .mode = GPIO_MODE_INPUT,
+	    .pull_up_en = GPIO_PULLUP_ENABLE,
+	    .pull_down_en = GPIO_PULLDOWN_DISABLE
+  };
+  gpio_config(&i_conf);
+  return ESP_OK;
+}
+

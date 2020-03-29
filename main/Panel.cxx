@@ -93,9 +93,9 @@ void RotaryEncoder::checkState()
 	else if(dir == -2 && !statB) dir=-3; // 左回転
 	else if(dir == -3 && !statA) dir=-4; // 左回転
 	else if (!statA && !statB) dir=0;
-	// ピンステータスセット
-	(countA > 30) ? statA = true : statA = false;
-	(countB > 30) ? statB = true : statB = false;
+	// ピンステータスセット 3mSecでトリガー
+	(countA > 3 * 10) ? statA = true : statA = false;
+	(countB > 3 * 10) ? statB = true : statB = false;
 	cmdtoQueue();
 }
 

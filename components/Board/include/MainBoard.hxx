@@ -18,8 +18,9 @@ public:
   esp_err_t i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data);
 private:
   esp_err_t initNVS();
-  esp_err_t initialize_filesystem();
-  esp_err_t i2cInit();
+  esp_err_t initFS();
+  esp_err_t initI2C();
+  esp_err_t initGPIO();
 };
 
 extern MainBoard board;

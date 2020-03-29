@@ -16,42 +16,18 @@ Internet and analogue BCL Radio startup functions
 #include "RadioConsole.hxx"
 #include "Network.hxx"
 #include "Panel.hxx"
-#include "vars.h"
 const char *TAG = "radio";
-
-esp_err_t initPeripherals()
-{
-  gpio_config_t
-    o_conf {
-	    .pin_bit_mask = (1ULL << POWER_ON),
-	    .mode = GPIO_MODE_OUTPUT,
-	    .pull_up_en = GPIO_PULLUP_DISABLE,
-	    .pull_down_en = GPIO_PULLDOWN_DISABLE,
-  };
-  gpio_config(&o_conf);
-  // Input GPIO configuration
-  gpio_config_t
-    i_conf {
-	    .pin_bit_mask = (1ULL << POWER_SW | 1ULL << ENC_A | 1ULL << ENC_B),
-	    .mode = GPIO_MODE_INPUT,
-	    .pull_up_en = GPIO_PULLUP_ENABLE,
-	    .pull_down_en = GPIO_PULLDOWN_DISABLE
-  };
-  gpio_config(&i_conf);
-  return ESP_OK;
-}
 
 extern "C" {
 void app_main(void)
 {
   ESP_LOGI(TAG, "Starting BCL Radio!\n");
-  initPeripherals();
-  board.init();
-  rnet.init();
-  rnet.connect();
-  Radio.Init();
-  Radio.powerOn();
-  rcon.init();
-  rpan.init();
+  board.init(); // メインボード初期化
+  rnet.init(); // ネットワーク  TCP/IP -Wi-Fi初期化
+  rnet.connect(); // ネットワーク接続
+  Radio.Init(); // アナログラジオ初期化
+  rcon.init(); // シリアルコンソール初期化
+  rpan.init(); // 操作パネル初期化
+  Radio.powerOn(); // アナログラジオ電源投入
 }
 }
