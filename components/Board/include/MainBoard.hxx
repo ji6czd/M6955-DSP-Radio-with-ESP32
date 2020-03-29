@@ -17,6 +17,7 @@ public:
   esp_err_t i2cWrite(uint8_t Device, uint8_t Register, uint8_t Data);
   esp_err_t i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data);
 private:
+  esp_err_t initNVS();
   esp_err_t initialize_filesystem();
   esp_err_t i2cInit();
 };
