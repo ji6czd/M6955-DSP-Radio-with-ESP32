@@ -101,6 +101,11 @@ esp_err_t MainBoard::i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data)
   return ret;
 }
 
+bool MainBoard::gpioGetLevel(gpio_num_t pin)
+{
+  return gpio_get_level(pin) ? true : false;
+}
+
 esp_err_t MainBoard::initGPIO()
 {
   gpio_config_t
