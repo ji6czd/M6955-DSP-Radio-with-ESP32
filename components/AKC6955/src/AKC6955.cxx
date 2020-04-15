@@ -222,16 +222,17 @@ uint16_t AKC6955::getRealCh()
 void AKC6955::chUp()
 {
   uint16_t ch = getCh();
-  ch++;
   akc6955Band b = getBand();
   
-  if (isAM3KMode() && ch > 1629/3) {
+  if (isAM3KMode() && ch == 1629/3) {
     b.bits.am = 3;
-    ch = 325;
+    ch = 1630/5;
   }
-  else if (!getMode() && ch > 30000/5) {
+  else if (!getMode() && ch == 30000/5) {
     setMode(true);
     ch = 1;
+  } else {
+    ch++;
   }
   setBand(b);
   setCh(ch);
@@ -240,16 +241,17 @@ void AKC6955::chUp()
 void AKC6955::chDown()
 {
   uint16_t ch = getCh();
-  ch--;
   akc6955Band b = getBand();
   if (getMode() && ch == 0) {
     setMode(false);
     b.bits.am = 3;
     ch = 30000/5;
   }
-  else if (!getMode() && ch < 1630/5) {
+  else if (!getMode() && ch == 1630/5) {
     b.bits.am = 2;
     ch = 1629/3;
+  } else {
+      ch--;
   }
   setBand(b);
   setCh(ch);
