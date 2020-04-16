@@ -71,7 +71,7 @@ public:
   mode_t getMode() { return mode; };
   int setBand(akc6955Band bn);
   akc6955Band getBand() { return band; };
-  uint32_t getFreq(){return frequency;};
+  uint32_t getFreq();
   int setFreq(uint32_t freq);
   uint16_t setCh(const uint16_t ch);
   uint16_t getCh() { return channel; };

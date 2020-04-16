@@ -146,6 +146,7 @@ int AKC6955::powerOn()
   st &= 0xf3;
   st |= 0b1000;
   write(AKC6955_VOLUME, st);
+  setFreq(594);
   return 0;
 }
 
@@ -186,6 +187,7 @@ void AKC6955::printStatus()
   if (isAM3KMode()) {
     ESP_LOGI("Radio", "3K step mode");
   }
+  ESP_LOGI("RADIO", "Freq=%d\n", getFreq());
 }
 
 uint16_t AKC6955::setCh(uint16_t ch)
@@ -217,6 +219,23 @@ uint16_t AKC6955::getRealCh()
   ch = ch | c;
   channel = ch;
   return ch;
+}
+
+uint32_t AKC6955::getFreq()
+{
+  uint16_t ch = getRealCh();
+  akc6955Band b;
+  b = getBand();
+  if (getMode()) {
+    return ch+25+30000;
+  } else {
+    if (isAM3KMode()) {
+      return ch*3;
+    }
+    else {
+      return ch*5;
+    }
+  }
 }
 
 void AKC6955::chUp()
