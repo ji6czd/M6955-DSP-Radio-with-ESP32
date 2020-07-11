@@ -119,7 +119,7 @@ esp_err_t MainBoard::initGPIO()
   // Input GPIO configuration
   gpio_config_t
     i_conf {
-	    .pin_bit_mask = (1ULL << POWER_SW | 1ULL << ENC_A | 1ULL << ENC_B),
+	    .pin_bit_mask = (1ULL << MICRO_SD | 1ULL << ENC_A | 1ULL << ENC_B),
 	    .mode = GPIO_MODE_INPUT,
 	    .pull_up_en = GPIO_PULLUP_ENABLE,
 	    .pull_down_en = GPIO_PULLDOWN_DISABLE

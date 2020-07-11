@@ -9,7 +9,7 @@ AKC6955 controle
 #include "MainBoard.hxx"
 #include "AKC6955.hxx"
 
-#define POWER_ON GPIO_NUM_19
+#define POWER_ON GPIO_NUM_23
 
 // Register definitions.
 #define AKC6955_CONFIG  0

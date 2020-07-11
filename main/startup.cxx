@@ -26,7 +26,7 @@ void app_main(void)
   rnet.init(); // ネットワーク  TCP/IP -Wi-Fi初期化
   Radio.Init(); // アナログラジオ初期化
   rcon.init(); // シリアルコンソール初期化
-  rpan.init(); // 操作パネル初期化
+  //rpan.init(); // 操作パネル初期化
   Radio.powerOn(); // アナログラジオ電源投入
   //rnet.connect(); // ネットワーク接続
 }

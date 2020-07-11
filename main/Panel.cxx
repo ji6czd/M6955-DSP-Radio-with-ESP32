@@ -140,8 +140,7 @@ void Panel::init()
   timer_isr_register(TIMER_GROUP_0, TIMER_0, timer_isr, NULL, 0, NULL);
   timer_enable_intr(TIMER_GROUP_0, TIMER_0);
   timer_start(TIMER_GROUP_0, TIMER_0);
-  sw[0].init(POWER_SW, panel_cmd::power_on); // Power
-	enc[0].init(ENC_A, ENC_B, panel_cmd::up, panel_cmd::down);
+  enc[0].init(ENC_A, ENC_B, panel_cmd::up, panel_cmd::down);
   xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
 }
 
