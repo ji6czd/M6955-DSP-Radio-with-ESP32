@@ -5,6 +5,7 @@
 #include "esp_system.h"
 #include "esp_log.h"
 #include "driver/i2c.h"
+#include "driver/ledc.h"
 #include "driver/gpio.h"
 #include "nvs_flash.h"
 #include "esp_vfs_fat.h"
@@ -24,7 +25,8 @@ esp_err_t MainBoard::init()
   ret = initFS();
   if (ret == ESP_OK) initNVS();
   if (ret == ESP_OK) ret = initI2C();
-	if (ret == ESP_OK) initGPIO();
+  if (ret == ESP_OK) initGPIO();
+  if (ret == ESP_OK) initBeep();
   return ret;
 }
 
@@ -66,7 +68,7 @@ int MainBoard::initI2C()
 	    .sda_pullup_en = GPIO_PULLUP_ENABLE,
 	    .scl_pullup_en = GPIO_PULLUP_ENABLE,
 	    .master = {
-		       .clk_speed = 400000
+		       .clk_speed = 100000
 		       },
   };
   ESP_ERROR_CHECK(i2c_param_config(CONFIG_I2C_MASTER_PORT_NUM, &conf));
@@ -128,3 +130,35 @@ esp_err_t MainBoard::initGPIO()
   return ESP_OK;
 }
 
+esp_err_t MainBoard::initBeep()
+{
+  ledc_timer.speed_mode = LEDC_HIGH_SPEED_MODE;
+  ledc_timer.duty_resolution = LEDC_TIMER_8_BIT;
+  ledc_timer.timer_num = LEDC_TIMER_0;
+  ledc_timer.freq_hz = 2000;
+  ledc_timer.clk_cfg = LEDC_AUTO_CLK;
+  ledc_channel.gpio_num = BEEP;
+  ledc_channel.speed_mode = LEDC_HIGH_SPEED_MODE;
+  ledc_channel.channel = LEDC_CHANNEL_0;
+  ledc_channel.timer_sel = LEDC_TIMER_0;
+  ledc_channel.duty = 0;
+  ledc_timer_config(&ledc_timer);
+  ledc_channel_config(&ledc_channel);
+  ESP_LOGI(tag, "%s\n", "Beep initialization OK");
+  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1);
+  ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+  vTaskDelay(80 / portTICK_PERIOD_MS);
+  // Beep off
+  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
+  ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+  ledc_set_freq(ledc_channel.speed_mode, LEDC_TIMER_0, 1000);
+  ledc_bind_channel_timer(ledc_channel.speed_mode, ledc_channel.channel, LEDC_TIMER_0); 
+  // Beep on
+  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1);
+  ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+  vTaskDelay(80 / portTICK_PERIOD_MS);
+  // Beep off
+  ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
+  ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+  return ESP_OK;
+}

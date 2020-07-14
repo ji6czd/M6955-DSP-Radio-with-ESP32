@@ -402,12 +402,14 @@ static void registerWiFiInfo(void)
 RadioConsole rcon;
 
 int RadioConsole::init() {
+  esp_console_repl_t *repl = NULL;
   esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
+  esp_console_dev_uart_config_t uart_config = ESP_CONSOLE_DEV_UART_CONFIG_DEFAULT();
   repl_config.prompt = "radio %";
   repl_config.history_save_path = HISTORY_PATH;
-  ESP_ERROR_CHECK(esp_console_repl_init(&repl_config));
+  ESP_ERROR_CHECK(esp_console_new_repl_uart(&uart_config, &repl_config, &repl));
   register_cmd();
-  ESP_ERROR_CHECK(esp_console_repl_start());
+  ESP_ERROR_CHECK(esp_console_start_repl(repl));
   return 0;
 }
 int RadioConsole::register_cmd() {

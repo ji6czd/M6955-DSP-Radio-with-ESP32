@@ -9,7 +9,7 @@
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "driver/gpio.h"
-
+#include "driver/ledc.h"
 class MainBoard
 {
 public:
@@ -22,6 +22,9 @@ private:
   esp_err_t initFS();
   esp_err_t initI2C();
   esp_err_t initGPIO();
+  esp_err_t initBeep();
+  ledc_timer_config_t ledc_timer;
+  ledc_channel_config_t ledc_channel;
 };
 
 extern MainBoard board;
