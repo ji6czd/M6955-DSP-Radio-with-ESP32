@@ -73,8 +73,11 @@ static const char tag[] = "ES8388";
 
 int ES8388::initNormalMode()
 {
+  int ret = board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0x50);
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0x00); //normal all and power up all
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
   /* dac */
-  int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0xC0);  //disable DAC and disable Lout/Rout/1/2
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0xC0);  //disable DAC and disable Lout/Rout/1/2
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL1, 0x12);  //Enfr=0,Play&Record Mode,(0x17-both of mic&paly)
   //    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0);  //LPVrefBuf=0,Pdn_ana=0
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL1, 0x18);//1a 0x18:16bit iis , 0x00:24
@@ -107,10 +110,11 @@ int ES8388::initBypassMode()
   int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x50); //  LIN to LOUT
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x50);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL18, 0x38);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL19, 0x38);
+  // ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL18, 0x38); // Not documented
+  // ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL19, 0x38); // Not documented
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xf3); // Bypass mode?
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
+  board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0xfc);
   return ret;
 }
 
@@ -118,11 +122,10 @@ int ES8388::init()
 {
   ESP_LOGI(tag, "%s", "Initializing ES8388 codec...\n");
   int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0x50);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0x00); //normal all and power up all
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
   // ret |= initNormalMode(); // Use DAC/ADC mode
   ret |= initBypassMode(); // Playing radio mode (analog bypass)
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x00);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
+  readAll();
   return ret;
 }
 
