@@ -107,25 +107,32 @@ int ES8388::initNormalMode()
 
 int ES8388::initBypassMode()
 {
-  int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x50); //  LIN to LOUT
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x50);
-  // ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL18, 0x38); // Not documented
-  // ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL19, 0x38); // Not documented
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xf3); // Bypass mode?
+  int ret = board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0x50); // Analog block enabled
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xc3); // Bypass mode?
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x40); //  Select LIN
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x40); //  Select RIN 
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL18, 0x38); // Not documented
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL19, 0x38); // Not documented
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL24, 0x1e); // LOUT volume 0db
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL25, 0x1e); // ROUT volume 0db
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
-  board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0xfc);
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0x3c);
+  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCPOWER, 0x3c);
   return ret;
 }
 
 int ES8388::init()
 {
   ESP_LOGI(tag, "%s", "Initializing ES8388 codec...\n");
+  readAll();
   int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
-  // ret |= initNormalMode(); // Use DAC/ADC mode
+  //ret |= initNormalMode(); // Use DAC/ADC mode
   ret |= initBypassMode(); // Playing radio mode (analog bypass)
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x00);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
   readAll();
+  if (ret != ESP_OK) ESP_LOGE("%s", "Codec initialization error!");
   return ret;
 }
 

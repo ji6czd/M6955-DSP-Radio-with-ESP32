@@ -227,7 +227,7 @@ uint32_t AKC6955::getFreq()
   akc6955Band b;
   b = getBand();
   if (getMode()) {
-    return ch+25+30000;
+    return ch*25+30000;
   } else {
     if (isAM3KMode()) {
       return ch*3;
