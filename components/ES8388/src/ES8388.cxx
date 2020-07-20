@@ -73,36 +73,7 @@ static const char tag[] = "ES8388";
 
 int ES8388::initNormalMode()
 {
-  int ret = board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0x50);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0x00); //normal all and power up all
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
-  /* dac */
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0xC0);  //disable DAC and disable Lout/Rout/1/2
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL1, 0x12);  //Enfr=0,Play&Record Mode,(0x17-both of mic&paly)
-  //    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0);  //LPVrefBuf=0,Pdn_ana=0
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL1, 0x18);//1a 0x18:16bit iis , 0x00:24
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL2, 0x02);  //DACFsMode,SINGLE SPEED; DACFsRatio,256
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x90); // only left DAC to left mixer enable 0db
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x90); // only right DAC to right mixer enable 0db
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL23, 0x00);   //vroi=0
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0x3c);
-  // res |= es8388_set_adc_dac_volume(ES_MODULE_DAC, 0, 0);          // 0db
-  
-  /* adc */
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCPOWER, 0xFF);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCCONTROL1, 0xbb); // MIC Left and Right channel PGA gain
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCCONTROL2, 0x00);  //0x00 LINSEL & RINSEL, LIN1/RIN1 as ADC Input; DSSEL,use one DS Reg11; DSR, LINPUT1-RINPUT1
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCCONTROL3, 0x02);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCCONTROL4, 0x0d); // Left/Right data, Left/Right justified mode, Bits length, I2S format
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCCONTROL5, 0x02);  //ADCFsMode,singel SPEED,RATIO=256
-  //ALC for Microphone
-  // res |= es8388_set_adc_dac_volume(ES_MODULE_ADC, 0, 0);      // 0db
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCPOWER, 0x09); //Power on ADC, Enable LIN&RIN, Power off MICBIAS, set int1lp to low power mode
-  /* enable es8388 PA */
-  // es8388_pa_power(true);
-  return ret;
+  return ESP_OK;
 }
 
 int ES8388::initBypassMode()
