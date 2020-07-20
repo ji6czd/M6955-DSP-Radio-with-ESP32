@@ -110,7 +110,8 @@ bool MainBoard::gpioGetLevel(gpio_num_t pin)
 
 esp_err_t MainBoard::initGPIO()
 {
-  gpio_config_t
+  /*
+    gpio_config_t
     o_conf {
 	    .pin_bit_mask = (1ULL << POWER_ON),
 	    .mode = GPIO_MODE_OUTPUT,
@@ -127,11 +128,13 @@ esp_err_t MainBoard::initGPIO()
 	    .pull_down_en = GPIO_PULLDOWN_DISABLE
   };
   gpio_config(&i_conf);
+  */
   return ESP_OK;
 }
 
 esp_err_t MainBoard::initBeep()
 {
+  /*
   ledc_timer.speed_mode = LEDC_HIGH_SPEED_MODE;
   ledc_timer.duty_resolution = LEDC_TIMER_8_BIT;
   ledc_timer.timer_num = LEDC_TIMER_0;
@@ -160,5 +163,6 @@ esp_err_t MainBoard::initBeep()
   // Beep off
   ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
   ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+  */
   return ESP_OK;
 }

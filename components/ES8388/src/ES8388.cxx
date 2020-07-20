@@ -5,7 +5,7 @@
 #include "ES8388.hxx"
 #include "MainBoard.hxx"
 
-#define ES8388_ADDR 0x11
+#define ES8388_ADDR 0x10
 /* ES8388 register */
 #define ES8388_CONTROL1         0x00
 #define ES8388_CONTROL2         0x01
