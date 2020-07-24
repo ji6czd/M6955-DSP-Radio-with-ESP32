@@ -73,10 +73,23 @@ static const char tag[] = "ES8388";
 
 int ES8388::selectSrc(Input_t src)
 {
-  uint8_t in=0;
+  uint8_t in=0; // Default input is IN1
   if (src == In2) in = 0x09;
   int ret = board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0x50); // Analog block enabled
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xc3); // Bypass mode?
+  if (src == Dac) {
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0x00); // Bypass mode?
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL1, 0x12);  //Enfr=0,Play&Record Mode,(0x17-both of mic&paly)
+//    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0);  //LPVrefBuf=0,Pdn_ana=0
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL1, 0x18);//1a 0x18:16bit iis , 0x00:24
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL2, 0x02);  //DACFsMode,SINGLE SPEED; DACFsRatio,256
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x90); // only left DAC to left mixer enable 0db
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x90); // only right DAC to right mixer enable 0db
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL23, 0x00);   //vroi=0
+  } else {
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xc3); // Bypass mode?
+  }
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, in); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x40); //  Select LIN
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x40); //  Select RIN 
