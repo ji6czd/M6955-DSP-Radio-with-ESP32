@@ -10,6 +10,7 @@
 #include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
+#define MAX_SAMPLE_RATE 48000
 class MainBoard
 {
 public:

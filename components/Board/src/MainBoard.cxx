@@ -1,3 +1,4 @@
+#include <cmath>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -166,3 +167,4 @@ esp_err_t MainBoard::initBeep()
   */
   return ESP_OK;
 }
+

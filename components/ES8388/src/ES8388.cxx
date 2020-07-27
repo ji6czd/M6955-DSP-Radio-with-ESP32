@@ -1,3 +1,4 @@
+#include <cmath>
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -70,6 +71,7 @@
 
 ES8388 es8388;
 static const char tag[] = "ES8388";
+static const float PI=3.14159265;
 
 int ES8388::selectSrc(Input_t src)
 {
@@ -87,6 +89,8 @@ int ES8388::selectSrc(Input_t src)
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x90); // only right DAC to right mixer enable 0db
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL23, 0x00);   //vroi=0
+    waveBeep(2000, 80);
+    waveBeep(1000, 80);
   } else {
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xc3); // Bypass mode?
   }
@@ -103,15 +107,15 @@ int ES8388::selectSrc(Input_t src)
 int ES8388::init()
 {
   ESP_LOGI(tag, "%s", "Initializing ES8388 codec...\n");
-  readAll();
+  //readAll();
   int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL24, 0x1e); // LOUT volume 0db
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL25, 0x1e); // ROUT volume 0db
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
-  ret |= selectSrc(In2);
+  ret |= selectSrc(Dac);
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x00);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
-  readAll();
+  //readAll();
   if (ret != ESP_OK) ESP_LOGE("%s", "Codec initialization error!");
   return ret;
 }
@@ -125,4 +129,20 @@ int ES8388::readAll()
     ESP_LOGI(tag, "%x:%x", i, reg);
   }
   return i;
+}
+
+esp_err_t ES8388::waveBeep(uint16_t freq, int16_t mSec)
+{
+  // fill in sine wave table maximum volume
+  uint16_t s;
+  for (s=0; s < (44100/freq); s++) {
+    WaveTable[s] = sin(2.0 * PI * s / (44100/freq)) * 0x7fff;
+  }
+  //ESP_LOGI(tag, "1 cycle is %d sample", s);
+  float m = mSec;
+  while (m > 0) {
+    m -= (1000.0/freq);
+    // Writing data to I2S bus
+  }
+  return ESP_OK;
 }
