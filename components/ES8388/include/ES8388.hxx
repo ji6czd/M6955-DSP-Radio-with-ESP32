@@ -13,8 +13,10 @@ public:
   esp_err_t selectSrc(Input_t src);
   esp_err_t readAll();
   esp_err_t waveBeep(uint16_t freq, int16_t mSec);
+  esp_err_t waveMute();
 private:
-  int16_t WaveTable[48000];
+  int rate=48000;
+  esp_err_t i2sInit();
 };
 extern ES8388 es8388;
 #endif

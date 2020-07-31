@@ -4,6 +4,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "ES8388.hxx"
+#include "driver/i2s.h"
 #include "MainBoard.hxx"
 
 #define ES8388_ADDR 0x10
@@ -133,16 +134,53 @@ int ES8388::readAll()
 
 esp_err_t ES8388::waveBeep(uint16_t freq, int16_t mSec)
 {
+  int16_t WaveTable[rate/freq*2];
   // fill in sine wave table maximum volume
   uint16_t s;
-  for (s=0; s < (44100/freq); s++) {
-    WaveTable[s] = sin(2.0 * PI * s / (44100/freq)) * 0x7fff;
+  for (s=0; s < (rate/freq); s++) {
+    WaveTable[s*2] = sin(2.0 * PI * s / (rate/freq)) * 0x0fff;
+    WaveTable[s*2+1] = sin(2.0 * PI * s / (rate/freq)) * 0x0fff;
   }
-  //ESP_LOGI(tag, "1 cycle is %d sample", s);
+
   float m = mSec;
   while (m > 0) {
-    m -= (1000.0/freq);
     // Writing data to I2S bus
+    size_t i2s_bytes_write = 0;
+    i2s_write(I2S_NUM_0, (void*)WaveTable, s*2, &i2s_bytes_write, 100);
+    // ESP_LOGI(tag, "Writing %d bytes", i2s_bytes_write);
+    m -= (1000.0/freq);
   }
   return ESP_OK;
+}
+
+esp_err_t ES8388::waveMute()
+{
+  return i2s_zero_dma_buffer(I2S_NUM_0);
+}
+
+esp_err_t ES8388::i2sInit()
+{
+  i2s_config_t
+    i2s_config = {
+		  .mode =  (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+		  .sample_rate = rate,
+		  .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
+		  .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           //2-channels
+		  .communication_format = I2S_COMM_FORMAT_STAND_MSB,
+		  .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,                                //Interrupt level 1
+		  .dma_buf_count  = 8,
+		  .dma_buf_len = 128
+  };
+  i2s_pin_config_t
+  pin_config = {
+		.bck_io_num = 2,
+		.ws_io_num = 22,
+		.data_out_num = 5,
+		.data_in_num = I2S_PIN_NO_CHANGE                                                       //Not used
+  };
+  esp_err_t ret = i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
+  if (!ret) ret |= i2s_set_pin(I2S_NUM_0, &pin_config);
+  //ret |= i2s_set_pin(I2S_NUM_0, NULL);
+  if (ret) ESP_LOGI(tag, "Initializing failed.");
+  return ret;
 }
