@@ -130,7 +130,7 @@ int AKC6955::read(uint8_t memory_address, uint8_t &value)
 
 int AKC6955::powerOn()
 {
-  gpio_set_level(POWER_ON, 1);
+  board.gpioSetLevel(POWER_ON, true);
   vTaskDelay(5 / portTICK_RATE_MS);
   // Clear mute
   akc6955Config cfg;

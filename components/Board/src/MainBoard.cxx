@@ -107,7 +107,10 @@ bool MainBoard::gpioGetLevel(gpio_num_t pin)
 {
   return gpio_get_level(pin) ? true : false;
 }
-
+esp_err_t MainBoard::gpioSetLevel(gpio_num_t pin, bool level)
+{
+  return gpio_set_level(pin, level);
+}
 esp_err_t MainBoard::initGPIO()
 {
   gpio_config_t
