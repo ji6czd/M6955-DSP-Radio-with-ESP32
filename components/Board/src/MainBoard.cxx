@@ -78,6 +78,7 @@ int MainBoard::initI2C()
 
 esp_err_t MainBoard::i2cWrite(uint8_t Device, uint8_t Register, uint8_t Data)
 {
+  uint8_t RegData;
   i2c_cmd_handle_t cmd = i2c_cmd_link_create();
   ESP_ERROR_CHECK(i2c_master_start(cmd));
   ESP_ERROR_CHECK(i2c_master_write_byte(cmd, Device << 1 | I2C_MASTER_WRITE, ACK_CHECK_EN));
@@ -104,6 +105,11 @@ esp_err_t MainBoard::i2cRead(uint8_t Device, uint8_t Register, uint8_t& Data)
   return ret;
 }
 
+esp_err_t MainBoard::gpioSetLevel(gpio_num_t pin, bool level)
+{
+  return gpio_set_level(pin, level);
+}
+
 bool MainBoard::gpioGetLevel(gpio_num_t pin)
 {
   return gpio_get_level(pin) ? true : false;
@@ -111,17 +117,18 @@ bool MainBoard::gpioGetLevel(gpio_num_t pin)
 
 esp_err_t MainBoard::initGPIO()
 {
-  /*
-    gpio_config_t
+  esp_err_t ret=ESP_OK;
+  // Output GPIO
+  gpio_config_t
     o_conf {
-	    .pin_bit_mask = (1ULL << POWER_ON),
+	    .pin_bit_mask = (1ULL << GPIO_NUM_21),
 	    .mode = GPIO_MODE_OUTPUT,
 	    .pull_up_en = GPIO_PULLUP_DISABLE,
 	    .pull_down_en = GPIO_PULLDOWN_DISABLE,
   };
-  gpio_config(&o_conf);
+  ret = gpio_config(&o_conf);
   // Input GPIO configuration
-  gpio_config_t
+  /* gpio_config_t
     i_conf {
 	    .pin_bit_mask = (1ULL << MICRO_SD | 1ULL << ENC_A | 1ULL << ENC_B),
 	    .mode = GPIO_MODE_INPUT,
@@ -130,7 +137,7 @@ esp_err_t MainBoard::initGPIO()
   };
   gpio_config(&i_conf);
   */
-  return ESP_OK;
+  return ret;
 }
 
 esp_err_t MainBoard::initBeep()

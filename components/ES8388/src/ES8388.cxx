@@ -82,15 +82,20 @@ int ES8388::selectSrc(Input_t src)
   if (src == Dac) {
     ESP_LOGI(tag, "DAC mode");
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0x00); // Bypass mode?
-    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL1, 0x12);  //Enfr=0,Play&Record Mode,(0x17-both of mic&paly)
-//    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL2, 0);  //LPVrefBuf=0,Pdn_ana=0
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0xc0);
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_CONTROL1, 0x12);
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL1, 0x18);//1a 0x18:16bit iis , 0x00:24
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL2, 0x02);  //DACFsMode,SINGLE SPEED; DACFsRatio,256
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL16, 0x00); // 0x00 audio on LIN1&RIN1,  0x09 LIN2&RIN2
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL17, 0x90); // only left DAC to left mixer enable 0db
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x90); // only right DAC to right mixer enable 0db
-    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80);
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL23, 0x00);   //vroi=0
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL5, 0x00);
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL4, 0x00);
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0x3c);
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCPOWER, 0xff);
   } else {
     ESP_LOGI(tag, "Bypass mode");
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_CHIPPOWER, 0xc3); // Bypass mode?
@@ -99,36 +104,83 @@ int ES8388::selectSrc(Input_t src)
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL20, 0x40); //  Select RIN 
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL18, 0x38); // Not documented
     ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL19, 0x38); // Not documented
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCPOWER, 0xfc);
+    ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0x3c);
   }
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACPOWER, 0x3c);
-    ret |= board.i2cWrite(ES8388_ADDR, ES8388_ADCPOWER, 0x3c);
-  ret |= i2sInit();
-  waveBeep(2000, 80);
-  waveBeep(1000, 80);
-  waveMute();
+  // 残りの初期化、とりあえずやってみる
+  ret |= board.i2cWrite(ES8388_ADDR, 0x09, 0xbb);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xa, 0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xb, 2);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xc, 0xd);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xd, 2);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x10, 0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x11, 0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x3, 9);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xc, 0xc);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x17, 0x18);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xc, 0xc);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x17, 0x18);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2e, 0x17);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2f, 0x17);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x30, 0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x31, 0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2b, 0x80);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x4, 0x3c);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x19, 0);
   return ret;
 }
 
 int ES8388::init()
 {
-  ESP_LOGI(tag, "%s", "Initializing ES8388 codec...\n");
-  //readAll();
-  int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_MASTERMODE, 0x00); //CODEC IN I2S SLAVE MODE
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL24, 0x1e); // LOUT volume 0db
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL25, 0x1e); // ROUT volume 0db
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL21, 0x80); //set internal ADC and DAC use the same LRCK clock, ADC LRCK as internal LRCK
-  ret |= selectSrc(Dac);
-  ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x00);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
-  //readAll();
+  ESP_LOGI(tag, "Initializing ES8388 codec...\n");
+  esp_err_t ret = 0;
+  ret |= board.i2cWrite(ES8388_ADDR, 0x19, 0x4);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x1, 0x50);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x8, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x4, 0xc0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x0, 0x12);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x17, 0x18);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x18, 0x2);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x26, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x27, 0x90);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2a, 0x90);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2b, 0x80);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2d, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x1b, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x1a, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x4, 0x3c);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x3, 0xff);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x9, 0xbb);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xa, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xb, 0x2);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xc, 0xd);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xd, 0x2);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x10, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x11, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x3, 0x9);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xc, 0xc);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x17, 0x18);
+  ret |= board.i2cWrite(ES8388_ADDR, 0xc, 0xc);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x17, 0x18);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2e, 0x17);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2f, 0x17);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x30, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x31, 0x0);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x2b, 0x80);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x4, 0x3c);
+  ret |= board.i2cWrite(ES8388_ADDR, 0x19, 0x0);
+  ret |= board.gpioSetLevel(GPIO_NUM_21, 0); // PA off
   if (ret != ESP_OK) ESP_LOGE("%s", "Codec initialization error!");
+  ret |= i2sInit();
+  //readAll();
   return ret;
 }
 
 int ES8388::readAll()
 {
   int i;
-  for (i = 0; i < 50; i++) {
+  for (i = 0; i < 0x35; i++) {
     uint8_t reg = 0;
     board.i2cRead(ES8388_ADDR, i, reg);
     ESP_LOGI(tag, "%x:%x", i, reg);
@@ -142,18 +194,19 @@ esp_err_t ES8388::waveBeep(uint16_t freq, int16_t mSec)
   // fill in sine wave table maximum volume
   uint16_t s;
   for (s=0; s < (rate/freq); s++) {
-    WaveTable[s*2] = sin(2.0 * PI * s / (rate/freq)) * 0x0fff;
+    WaveTable[s*2] = sin(2.0 * PI * s / (rate/freq)) * 0x3fff;
     WaveTable[s*2+1] = sin(2.0 * PI * s / (rate/freq)) * 0x0fff;
   }
-
+  uint16_t w=0;
   float m = mSec;
   while (m > 0) {
     // Writing data to I2S bus
     size_t i2s_bytes_write = 0;
     i2s_write(I2S_NUM_0, (void*)WaveTable, s*2, &i2s_bytes_write, 100);
-    // ESP_LOGI(tag, "Writing %d bytes", i2s_bytes_write);
     m -= (1000.0/freq);
+    w += i2s_bytes_write;
   }
+  ESP_LOGI(tag, "Writing %d bytes", w);
   return ESP_OK;
 }
 
@@ -166,25 +219,30 @@ esp_err_t ES8388::i2sInit()
 {
   i2s_config_t
     i2s_config = {
-		  .mode =  (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
+		  .mode =  (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX | I2S_MODE_RX),
 		  .sample_rate = rate,
 		  .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
 		  .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,                           //2-channels
-		  .communication_format = I2S_COMM_FORMAT_STAND_MSB,
+		  .communication_format = I2S_COMM_FORMAT_I2S,
 		  .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,                                //Interrupt level 1
-		  .dma_buf_count  = 8,
-		  .dma_buf_len = 128
+		  .dma_buf_count  = 4,
+		  .dma_buf_len = 512,
+		  .use_apll = true,
+		  .fixed_mclk = 0
   };
   i2s_pin_config_t
   pin_config = {
-		.bck_io_num = 5,
-		.ws_io_num = 25,
-		.data_out_num = 35,
-		.data_in_num = I2S_PIN_NO_CHANGE                                                       //Not used
+		.bck_io_num = GPIO_NUM_5,
+		.ws_io_num = GPIO_NUM_25,
+		.data_out_num = GPIO_NUM_26,
+		.data_in_num = GPIO_NUM_35
   };
   esp_err_t ret = i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
   if (ret) ret |= i2s_set_pin(I2S_NUM_0, &pin_config);
   //ret |= i2s_set_pin(I2S_NUM_0, NULL);
+  i2s_set_clk(I2S_NUM_0, rate, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_STEREO);
+  ret |= PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+  ret |= WRITE_PERI_REG(PIN_CTRL, 0xFFF0);
   if (ret) ESP_LOGI(tag, "Initializing failed.");
   return ret;
 }

@@ -22,5 +22,7 @@ void app_main(void)
   ESP_LOGI(TAG, "Starting BCL Radio!\n");
   board.init(); // メインボード初期化
   es8388.init();
+  es8388.waveBeep(2000, 300);
+  //es8388.waveMute();
 }
 }
