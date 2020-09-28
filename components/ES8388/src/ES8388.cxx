@@ -126,12 +126,12 @@ int ES8388::initBypassMode()
 int ES8388::init()
 {
   ESP_LOGI(tag, "%s", "Initializing ES8388 codec...\n");
-  readAll();
+  //readAll();
   int ret = board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x04);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
   //ret |= initNormalMode(); // Use DAC/ADC mode
   ret |= initBypassMode(); // Playing radio mode (analog bypass)
   ret |= board.i2cWrite(ES8388_ADDR, ES8388_DACCONTROL3, 0x00);  // 0x04 mute/0x00 unmute&ramp;DAC unmute and  disabled digital volume control soft ramp
-  readAll();
+  //readAll();
   if (ret != ESP_OK) ESP_LOGE("%s", "Codec initialization error!");
   return ret;
 }

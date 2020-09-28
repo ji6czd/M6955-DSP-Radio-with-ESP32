@@ -7,4 +7,6 @@
 #define ENC_A GPIO_NUM_19
 #define ENC_B GPIO_NUM_18
 #define BEEP GPIO_NUM_33
+#define EXP_SW1 GPIO_NUM_12
+#define EXP_SW2 GPIO_NUM_34
 #endif

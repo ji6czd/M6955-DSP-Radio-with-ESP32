@@ -58,7 +58,7 @@ void TactSwitch::checkState()
   }
 }
 
-TactSwitch sw[10];
+TactSwitch sw[4];
 
 class RotaryEncoder {
 public:
@@ -141,6 +141,8 @@ void Panel::init()
   timer_enable_intr(TIMER_GROUP_0, TIMER_0);
   timer_start(TIMER_GROUP_0, TIMER_0);
   enc[0].init(ENC_A, ENC_B, panel_cmd::up, panel_cmd::down);
+  sw[0].init(EXP_SW1, panel_cmd::down);
+  sw[1].init(EXP_SW2, panel_cmd::up);
   xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
 }
 
