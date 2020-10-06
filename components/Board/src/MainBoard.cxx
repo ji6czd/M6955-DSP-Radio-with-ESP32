@@ -63,16 +63,16 @@ int MainBoard::initI2C()
   const i2c_config_t
     conf = {
 	    .mode = I2C_MODE_MASTER,
-	    .sda_io_num = CONFIG_I2C_MASTER_SDA,
-	    .scl_io_num = CONFIG_I2C_MASTER_SCL,
+	    .sda_io_num = 21,
+	    .scl_io_num = 22,
 	    .sda_pullup_en = GPIO_PULLUP_ENABLE,
 	    .scl_pullup_en = GPIO_PULLUP_ENABLE,
 	    .master = {
-		       .clk_speed = 100000
+		       .clk_speed = 400000
 		       },
   };
-  ESP_ERROR_CHECK(i2c_param_config(CONFIG_I2C_MASTER_PORT_NUM, &conf));
-  return i2c_driver_install(CONFIG_I2C_MASTER_PORT_NUM, conf.mode, 0, 0, 0);
+  ESP_ERROR_CHECK(i2c_param_config(0, &conf));
+  return i2c_driver_install(0, conf.mode, 0, 0, 0);
 }
 
 esp_err_t MainBoard::i2cWrite(uint8_t Device, uint8_t Register, uint8_t Data)
