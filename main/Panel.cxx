@@ -288,12 +288,15 @@ void Panel::panel_main(void* args)
       }
       else if (sw[16].checkState()) {
 	ESP_LOGI("Panel", "F1");
+	Radio.setFreq(594);
       }
       else if (sw[17].checkState()) {
 	ESP_LOGI("Panel", "F2");
+	Radio.setFreq(80000);
       }
       else if (sw[18].checkState()) {
 	ESP_LOGI("Panel", "F3");
+	Radio.setFreq(7000);
       }
       else if (sw[19].checkState()) {
 	ESP_LOGI("Panel", "Stop");
