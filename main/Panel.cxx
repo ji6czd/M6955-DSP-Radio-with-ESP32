@@ -11,6 +11,7 @@
 #include "driver/timer.h"
 #include "Panel.hxx"
 #include "MainBoard.hxx"
+#include "AKC6955.hxx"
 #include "vars.h"
 
 enum class
@@ -50,13 +51,13 @@ void IOExpander::checkState()
 {
   stat = 0;
   uint8_t data;
-  board.i2cRead(i2cAddr, 0, data);
+  board.i2cRead(i2cAddr, 2, data);
   stat = data;
   stat <<= 8;
   board.i2cRead(i2cAddr, 1, data);
   stat |= data;
   stat <<= 8;
-  board.i2cRead(i2cAddr, 2, data);
+  board.i2cRead(i2cAddr, 0, data);
   stat |= data;
 }
 
@@ -97,6 +98,32 @@ bool TactSwitch::checkState()
 }
 
 TactSwitch sw[22];
+
+class RotarySwitch {
+public:
+  void init(uint8_t port, uint32_t pin) {
+    expander = port;
+    mask = port;
+  };
+  uint8_t checkState();
+  bool isInit() { return mask ? true : false; };
+private:
+  uint32_t mask; // 接続先のピン
+  uint8_t expander;
+  uint32_t pState;
+};
+
+uint8_t RotarySwitch::checkState()
+{
+  uint32_t state = ~(exp[expander].getState() & 0x00ffffff);
+  state &= mask;
+  if (pState != state) {
+    pState = state;
+    state >>= 12;
+  }
+  return 0;
+}
+
 
 class RotaryEncoder {
 public:
@@ -166,21 +193,28 @@ void Panel::init()
   enc[0].init(ENC_A, ENC_B, panel_cmd::up, panel_cmd::down);
   exp[0].init(0x22);
   exp[1].init(0x23);
-  sw[0].init(0, 0x040000); // Nupad0
-  sw[1].init(0, 0x020000); // Nupad star
-  sw[2].init(0, 0x010000); // Numpad #
-  sw[3].init(0, 0x080000); // Nupad 7
-  sw[4].init(0, 0x100000);
-  sw[5].init(0, 0x200000);
-  sw[6].init(0, 0x400000);
-  sw[7].init(0, 0x800000);
+  sw[0].init(0, 0x000001); 
+  sw[1].init(0, 0x000002); // Nupad star
+  sw[2].init(0, 0x000004); // Numpad #
+  sw[3].init(0, 0x000008); // Nupad 7
+  sw[4].init(0, 0x000010);
+  sw[5].init(0, 0x000020);
+  sw[6].init(0, 0x000040);
+  sw[7].init(0, 0x800080);
   sw[8].init(0, 0x000100);
   sw[9].init(0, 0x000200);
   sw[10].init(0, 0x000400);
-  sw[12].init(1, 0x000001);
-  sw[13].init(1, 0x000002);
-  sw[14].init(1, 0x000004);
-  sw[15].init(1, 0x000010);
+  sw[11].init(0, 0x000800);
+  sw[12].init(1, 0x010000);
+  sw[13].init(1, 0x020000);
+  sw[14].init(1, 0x040000);
+  sw[15].init(1, 0x080000);
+  sw[16].init(1, 0x000100);
+  sw[17].init(1, 0x000200);
+  sw[18].init(1, 0x000400);
+  sw[19].init(1, 0x000800);
+  sw[20].init(1, 0x001000);
+  sw[21].init(1, 0x002000);
   timer_config_t
     tm {
 	.alarm_en = TIMER_ALARM_EN,
@@ -205,50 +239,77 @@ void Panel::panel_main(void* args)
   uint32_t data;
   for(;;) {
     xQueueReceive(cmd_queue, &cmd, portMAX_DELAY);
-    switch (cmd) {
-    case panel_cmd::exp_0:
+    // ダイヤル操作
+    if (cmd == panel_cmd::up) {
+      Radio.chUp();
+    } else if (cmd == panel_cmd::down) {
+      Radio.chDown();
+    }
+    // キースイッチ操作
+    else if (cmd == panel_cmd::exp_0) {
       exp[0].checkState();
       exp[1].checkState();
-      data = exp[1].getState();
-      if (prevData != data) {
-        ESP_LOGI("debug", "%08x", data);
-	prevData=data;
-      }
       if (sw[0].checkState())
-	ESP_LOGI("Panel", "0");
-      if (sw[1].checkState())
-	ESP_LOGI("Panel", "sharp");
-      if (sw[2].checkState())
 	ESP_LOGI("Panel", "star");
-      if (sw[3].checkState())
+      else if (sw[1].checkState())
+	ESP_LOGI("Panel", "sharp");
+      else if (sw[2].checkState())
+	ESP_LOGI("Panel", "0");
+      else if (sw[3].checkState())
 	ESP_LOGI("Panel", "7");
-      if (sw[4].checkState())
+      else if (sw[4].checkState())
 	ESP_LOGI("Panel", "9");
-      if (sw[5].checkState())
+      else if (sw[5].checkState())
 	ESP_LOGI("Panel", "8");
-      if (sw[6].checkState())
+      else if (sw[6].checkState())
 	ESP_LOGI("Panel", "4");
-      if (sw[7].checkState())
+      else if (sw[7].checkState())
 	ESP_LOGI("Panel", "6");
-      if (sw[8].checkState())
+      else if (sw[8].checkState())
 	ESP_LOGI("Panel", "5");
-      if (sw[9].checkState())
+      else if (sw[9].checkState())
 	ESP_LOGI("Panel", "1");
-      if (sw[10].checkState())
+      else if (sw[10].checkState())
 	ESP_LOGI("Panel", "3");
-     if (sw[11].checkState())
+      else if (sw[11].checkState())
 	ESP_LOGI("Panel", "2");
-     if (sw[12].checkState())
+      else if (sw[12].checkState())
 	ESP_LOGI("Panel", "Select");
-     if (sw[13].checkState())
+      else if (sw[13].checkState()) {
+	Radio.chDown();
 	ESP_LOGI("Panel", "Down");
-     if (sw[14].checkState())
+      }
+      else if (sw[14].checkState()) {
+	Radio.chUp();
 	ESP_LOGI("Panel", "Up");
-     if (sw[15].checkState())
+      }
+      else if (sw[15].checkState()) {
 	ESP_LOGI("Panel", "Voice");
-      break;
-    default:
-      ESP_LOGI("Panel", "other command");
+      }
+      else if (sw[16].checkState()) {
+	ESP_LOGI("Panel", "F1");
+      }
+      else if (sw[17].checkState()) {
+	ESP_LOGI("Panel", "F2");
+      }
+      else if (sw[18].checkState()) {
+	ESP_LOGI("Panel", "F3");
+      }
+      else if (sw[19].checkState()) {
+	ESP_LOGI("Panel", "Stop");
+      }
+      else if (sw[20].checkState()) {
+	ESP_LOGI("Panel", "Play");
+      }
+      else if (sw[21].checkState()) {
+	ESP_LOGI("Panel", "Pause");
+      }
+      data = ~exp[1].getState() & 0x00ffffff;
+      if (prevData != data) {
+	prevData=data;
+        ESP_LOGI("debug", "%08x", data);
+      }
     }
   }
 }
+
