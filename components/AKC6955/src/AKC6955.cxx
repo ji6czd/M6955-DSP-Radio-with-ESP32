@@ -316,7 +316,6 @@ int AKC6955::setFreq(uint32_t freq)
   }
     setBand(b);
   setCh(ch);
-  printStatus();
   return 0;
 }
 

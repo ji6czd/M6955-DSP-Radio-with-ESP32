@@ -18,6 +18,7 @@ public:
   void init();
 private:
   static void panel_main(void* args);
+  static void bandSelect(uint8_t band);
 };
 
 extern Panel rpan;

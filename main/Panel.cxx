@@ -1,3 +1,5 @@
+#include "freertos/portmacro.h"
+#include "hal/gpio_types.h"
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,6 +15,7 @@
 #include "MainBoard.hxx"
 #include "AKC6955.hxx"
 #include "vars.h"
+#include <cstdlib>
 
 enum class
 panel_cmd {
@@ -35,7 +38,7 @@ xQueueHandle cmd_queue;
 
 class IOExpander {
 public:
-  void init(uint8_t Addr) { i2cAddr = Addr; cmd = panel_cmd::exp_0; triger=0; };
+  void init(uint8_t Addr, panel_cmd port, gpio_num_t trigPin) { i2cAddr = Addr; cmd = port; pin = trigPin; };
   void checkState();
   void checkStateISR();
   bool isInit() { return i2cAddr ? true : false; };
@@ -44,7 +47,7 @@ private:
   uint32_t stat;
   uint8_t i2cAddr;
   panel_cmd cmd;
-  uint8_t triger;
+  gpio_num_t pin;
 };
 
 void IOExpander::checkState()
@@ -63,11 +66,8 @@ void IOExpander::checkState()
 
 void IOExpander::checkStateISR()
 {
-  if (triger == 100) {
+  if (!gpio_get_level(pin)) {
     xQueueSendFromISR(cmd_queue, &cmd, NULL);
-    triger = 0;
-  } else {
-    triger++;
   }
 }
 
@@ -99,31 +99,43 @@ bool TactSwitch::checkState()
 
 TactSwitch sw[22];
 
+
 class RotarySwitch {
 public:
   void init(uint8_t port, uint32_t pin) {
     expander = port;
-    mask = port;
+    mask = pin;
   };
   uint8_t checkState();
   bool isInit() { return mask ? true : false; };
 private:
   uint32_t mask; // 接続先のピン
   uint8_t expander;
-  uint32_t pState;
+  uint8_t selected;
 };
 
 uint8_t RotarySwitch::checkState()
 {
-  uint32_t state = ~(exp[expander].getState() & 0x00ffffff);
-  state &= mask;
-  if (pState != state) {
-    pState = state;
-    state >>= 12;
+  uint32_t state = (~exp[expander].getState() & 0x00ffffff);
+  if (mask & 0x800000) {
+    state /= ((~mask & 0x00ffffff)+1);
+  }
+  if (mask & 0x01) {
+    state &= mask;
+  }
+  if (state == 0) return 0;
+  uint8_t count;
+  for (count=1; (state > 1); count++) {
+    state >>=1;
+  }
+  if (selected != count) {
+    selected=count;
+    return selected;
   }
   return 0;
 }
 
+RotarySwitch RSw[2];
 
 class RotaryEncoder {
 public:
@@ -170,7 +182,7 @@ void RotaryEncoder::cmdtoQueue()
 	else if (dir == -4) xQueueSendFromISR(cmd_queue, &cmdB, NULL);
 }
 
-RotaryEncoder enc[2];
+RotaryEncoder enc[1];
 
 /* non-class Functions */
 void IRAM_ATTR timer_isr(void *para)
@@ -191,8 +203,8 @@ void Panel::init()
   ESP_LOGI("Panel", "Initializing...");
   cmd_queue = xQueueCreate(8, sizeof(panel_cmd));
   enc[0].init(ENC_A, ENC_B, panel_cmd::up, panel_cmd::down);
-  exp[0].init(0x22);
-  exp[1].init(0x23);
+  exp[0].init(0x22, panel_cmd::exp_0, EXP_SW1);
+  exp[1].init(0x23, panel_cmd::exp_1, EXP_SW2);
   sw[0].init(0, 0x000001); 
   sw[1].init(0, 0x000002); // Nupad star
   sw[2].init(0, 0x000004); // Numpad #
@@ -215,6 +227,8 @@ void Panel::init()
   sw[19].init(1, 0x000800);
   sw[20].init(1, 0x001000);
   sw[21].init(1, 0x002000);
+  RSw[0].init(0, 0xfff000);
+  RSw[1].init(1, 0x3f);
   timer_config_t
     tm {
 	.alarm_en = TIMER_ALARM_EN,
@@ -230,6 +244,40 @@ void Panel::init()
   timer_enable_intr(TIMER_GROUP_0, TIMER_0);
   timer_start(TIMER_GROUP_0, TIMER_0);
   xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
+}
+
+void Panel::bandSelect(uint8_t band) {
+  switch (band) {
+  case 1:
+    Radio.setFreq(594);
+    break;
+  case 2:
+    Radio.setFreq(3700);
+    break;
+  case 3:
+    Radio.setFreq(5800);
+    break;
+  case 4:
+    Radio.setFreq(7200);
+    break;
+  case 5:
+    Radio.setFreq(9000);
+    break;
+  case 6:
+    Radio.setFreq(11000);
+    break;
+  case 7:
+    Radio.setFreq(15000);
+    break;
+    case 8:
+    Radio.setFreq(21500);
+    break;
+  case 9:
+    Radio.setFreq(80000);
+    break;
+  default:
+    break;
+  }
 }
 
 void Panel::panel_main(void* args)
@@ -248,7 +296,6 @@ void Panel::panel_main(void* args)
     // キースイッチ操作
     else if (cmd == panel_cmd::exp_0) {
       exp[0].checkState();
-      exp[1].checkState();
       if (sw[0].checkState())
 	ESP_LOGI("Panel", "star");
       else if (sw[1].checkState())
@@ -282,9 +329,16 @@ void Panel::panel_main(void* args)
       else if (sw[14].checkState()) {
 	Radio.chUp();
 	ESP_LOGI("Panel", "Up");
+      } else {
+	uint8_t select = RSw[0].checkState();
+	if (select) bandSelect(select);
       }
-      else if (sw[15].checkState()) {
+    }
+    else if (cmd == panel_cmd::exp_1) {
+      exp[1].checkState();
+      if (sw[15].checkState()) {
 	ESP_LOGI("Panel", "Voice");
+	Radio.printStatus();
       }
       else if (sw[16].checkState()) {
 	ESP_LOGI("Panel", "F1");
@@ -306,11 +360,9 @@ void Panel::panel_main(void* args)
       }
       else if (sw[21].checkState()) {
 	ESP_LOGI("Panel", "Pause");
-      }
-      data = ~exp[1].getState() & 0x00ffffff;
-      if (prevData != data) {
-	prevData=data;
-        ESP_LOGI("debug", "%08x", data);
+      } else {
+	uint8_t select = RSw[1].checkState();
+	if (select) ESP_LOGI("Rsw1", "%d\n", select);
       }
     }
   }
