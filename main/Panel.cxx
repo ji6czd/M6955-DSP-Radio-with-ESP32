@@ -12,6 +12,7 @@
 #include "driver/periph_ctrl.h"
 #include "driver/timer.h"
 #include "Panel.hxx"
+#include "Commands.hxx"
 #include "MainBoard.hxx"
 #include "AKC6955.hxx"
 #include "vars.h"
@@ -246,40 +247,6 @@ void Panel::init()
   xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
 }
 
-void Panel::bandSelect(uint8_t band) {
-  switch (band) {
-  case 1:
-    Radio.setFreq(594);
-    break;
-  case 2:
-    Radio.setFreq(3700);
-    break;
-  case 3:
-    Radio.setFreq(5800);
-    break;
-  case 4:
-    Radio.setFreq(7200);
-    break;
-  case 5:
-    Radio.setFreq(9000);
-    break;
-  case 6:
-    Radio.setFreq(11000);
-    break;
-  case 7:
-    Radio.setFreq(15000);
-    break;
-    case 8:
-    Radio.setFreq(21500);
-    break;
-  case 9:
-    Radio.setFreq(80000);
-    break;
-  default:
-    break;
-  }
-}
-
 void Panel::panel_main(void* args)
 {
   panel_cmd cmd;
@@ -289,68 +256,62 @@ void Panel::panel_main(void* args)
     xQueueReceive(cmd_queue, &cmd, portMAX_DELAY);
     // ダイヤル操作
     if (cmd == panel_cmd::up) {
-      Radio.chUp();
+      OpCmd.RotaryEncoder(true);
     } else if (cmd == panel_cmd::down) {
-      Radio.chDown();
+      OpCmd.RotaryEncoder(false);
     }
     // キースイッチ操作
     else if (cmd == panel_cmd::exp_0) {
       exp[0].checkState();
       if (sw[0].checkState())
-	ESP_LOGI("Panel", "star");
+	OpCmd.NumPad(0xa);
       else if (sw[1].checkState())
-	ESP_LOGI("Panel", "sharp");
+	OpCmd.NumPad(0xb);
       else if (sw[2].checkState())
-	ESP_LOGI("Panel", "0");
+	OpCmd.NumPad(0);
       else if (sw[3].checkState())
-	ESP_LOGI("Panel", "7");
+	OpCmd.NumPad(7);
       else if (sw[4].checkState())
-	ESP_LOGI("Panel", "9");
-      else if (sw[5].checkState())
-	ESP_LOGI("Panel", "8");
+	OpCmd.NumPad(9);
+	else if (sw[5].checkState())
+	  OpCmd.NumPad(8);
       else if (sw[6].checkState())
-	ESP_LOGI("Panel", "4");
+	OpCmd.NumPad(4);
       else if (sw[7].checkState())
-	ESP_LOGI("Panel", "6");
+	OpCmd.NumPad(6);
       else if (sw[8].checkState())
-	ESP_LOGI("Panel", "5");
+	OpCmd.NumPad(5);
       else if (sw[9].checkState())
-	ESP_LOGI("Panel", "1");
+	OpCmd.NumPad(1);
       else if (sw[10].checkState())
-	ESP_LOGI("Panel", "3");
+	OpCmd.NumPad(3);
       else if (sw[11].checkState())
-	ESP_LOGI("Panel", "2");
+	OpCmd.NumPad(2);
       else if (sw[12].checkState())
-	ESP_LOGI("Panel", "Select");
+	OpCmd.NumPad(0xb);
       else if (sw[13].checkState()) {
-	Radio.chDown();
-	ESP_LOGI("Panel", "Down");
+	OpCmd.RotaryEncoder(false);
       }
       else if (sw[14].checkState()) {
-	Radio.chUp();
-	ESP_LOGI("Panel", "Up");
+	OpCmd.RotaryEncoder(true);
       } else {
 	uint8_t select = RSw[0].checkState();
-	if (select) bandSelect(select);
+	if (select) OpCmd.RotarySwitch(0, select);
       }
     }
     else if (cmd == panel_cmd::exp_1) {
       exp[1].checkState();
       if (sw[15].checkState()) {
-	ESP_LOGI("Panel", "Voice");
-	Radio.printStatus();
+	OpCmd.FunctionKey(7);
       }
       else if (sw[16].checkState()) {
 	ESP_LOGI("Panel", "F1");
-	Radio.setFreq(594);
       }
       else if (sw[17].checkState()) {
 	ESP_LOGI("Panel", "F2");
-	Radio.setFreq(80000);
       }
       else if (sw[18].checkState()) {
 	ESP_LOGI("Panel", "F3");
-	Radio.setFreq(7000);
       }
       else if (sw[19].checkState()) {
 	ESP_LOGI("Panel", "Stop");
