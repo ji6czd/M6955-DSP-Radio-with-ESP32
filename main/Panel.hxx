@@ -17,7 +17,7 @@ class Panel
 public:
   void init();
 private:
-  static void panel_main(void* args);
+  static void panel_main();
   static void bandSelect(uint8_t band);
 };
 

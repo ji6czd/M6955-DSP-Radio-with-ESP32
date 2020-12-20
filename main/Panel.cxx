@@ -15,6 +15,7 @@
 #include "Commands.hxx"
 #include "MainBoard.hxx"
 #include "AKC6955.hxx"
+#include "Environ.hxx"
 #include "vars.h"
 #include <cstdlib>
 
@@ -244,10 +245,10 @@ void Panel::init()
   timer_isr_register(TIMER_GROUP_0, TIMER_0, timer_isr, NULL, 0, NULL);
   timer_enable_intr(TIMER_GROUP_0, TIMER_0);
   timer_start(TIMER_GROUP_0, TIMER_0);
-  xTaskCreate(panel_main, "PanelMain", 2048, NULL, 1, NULL);
+  panel_main();
 }
 
-void Panel::panel_main(void* args)
+void Panel::panel_main()
 {
   panel_cmd cmd;
   uint32_t prevData=0;
@@ -323,9 +324,10 @@ void Panel::panel_main(void* args)
 	ESP_LOGI("Panel", "Pause");
       } else {
 	uint8_t select = RSw[1].checkState();
-	if (select) ESP_LOGI("Rsw1", "%d\n", select);
+	if (select) OpCmd.RotarySwitch(1, select);
       }
     }
+    vTaskDelay(1 / portTICK_PERIOD_MS);
   }
 }
 

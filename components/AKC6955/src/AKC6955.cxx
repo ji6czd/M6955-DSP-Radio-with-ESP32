@@ -2,11 +2,14 @@
 AKC6955 controle
 */
 
+#include "driver/ledc.h"
+#include "freertos/projdefs.h"
 #include "sdkconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "MainBoard.hxx"
+#include "Environ.hxx"
 #include "AKC6955.hxx"
 
 #define POWER_ON GPIO_NUM_23
@@ -317,6 +320,22 @@ int AKC6955::setFreq(uint32_t freq)
     setBand(b);
   setCh(ch);
   return 0;
+}
+
+bool AKC6955::addMemory()
+{
+  memoryData m;
+  m.stationName = "Analogue Radio";
+  m.freq = getFreq();
+  m.streamURL= "analog:radio/" ;
+  return env.AddMemoryCh(m);
+}
+
+bool AKC6955::recallMemory(uint8_t memNo)
+{
+  memoryData m;
+  m = env.GetMemoryCh(memNo);
+  return setFreq(m.freq);
 }
 
 AKC6955 Radio;

@@ -1,2 +1,4 @@
 idf_component_register(SRCS "src/Environ.cxx"
-                    INCLUDE_DIRS "include")
+  REQUIRES json_cpp
+                    INCLUDE_DIRS "include"
+		    REQUIRES json nvs_flash fatfs Board)

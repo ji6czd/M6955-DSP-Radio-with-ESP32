@@ -28,6 +28,8 @@ public:
   uint16_t getCh() { return channel; };
   void chUp();
   void chDown();
+  bool addMemory();
+  bool recallMemory(uint8_t memNo);
   void printStatus();
 private:
   bool powerStatus;

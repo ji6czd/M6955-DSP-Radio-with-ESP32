@@ -53,6 +53,27 @@ bool OPERATION_COMMAND::RotarySwitch(uint8_t swNum, uint8_t select)
   default:
     break;
   }
+  } else if (swNum == 1) {
+    switch (select) {
+    case 1:
+      Radio.recallMemory(0);
+      break;
+    case 2:
+      Radio.recallMemory(1);
+      break;
+    case 3:
+      Radio.recallMemory(2);
+      break;
+    case 4:
+      Radio.recallMemory(3);
+      break;
+    case 5:
+    Radio.recallMemory(4);
+    break;
+    case 6:
+      Radio.recallMemory(5);
+      break;
+    }
   }
   return true;
 }
@@ -67,7 +88,7 @@ bool OPERATION_COMMAND::NumPad(uint8_t key)
 {
   switch (key) {
   case 0xa:
-    inputNum=0;
+    Radio.addMemory();
     break;
   case 0xb:
     Radio.setFreq(inputNum);

@@ -2,6 +2,7 @@
 #define _VARS_H_
 #define MOUNT_PATH "/data"
 #define HISTORY_PATH MOUNT_PATH "/history"
+#define MEMORY_DATA_FILE MOUNT_PATH "/memory"
 #define MICRO_SD GPIO_NUM_39
 #define POWER_ON GPIO_NUM_23
 #define ENC_A GPIO_NUM_19
