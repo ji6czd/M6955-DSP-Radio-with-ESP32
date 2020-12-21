@@ -40,7 +40,7 @@ esp_err_t Environ::AddMemoryCh(memoryData data)
     cJSON_AddNumberToObject(item, "mode", (double)data.mode);
     cJSON_AddStringToObject(item, "streamurl", data.streamURL.c_str());
     cJSON_AddItemToArray(array, item);
-    Save(); // こっちが成功だよお
+    SaveFile(MEMORY_DATA_FILE, root);
     return ESP_OK;
    }
   return -1; // 失敗だからねえ
@@ -57,24 +57,43 @@ memoryData Environ::GetMemoryCh(uint8_t memNo)
   return mem;
 }
 
-esp_err_t Environ::Save()
+esp_err_t Environ::setStatus(memoryData data)
 {
-  ofstream fp(MEMORY_DATA_FILE);
-  string s = cJSON_PrintUnformatted(root);
+  cJSON_AddStringToObject(current, "name", data.stationName.c_str());
+  cJSON_AddNumberToObject(current, "frequency", (double)data.freq);
+  cJSON_AddNumberToObject(current, "mode", (double)data.mode);
+  cJSON_AddStringToObject(current, "streamurl", data.streamURL.c_str());
+  SaveFile(STATUS_DATA_FILE, current); // こっちが成功だよお
+  return ESP_OK;
+}
+
+esp_err_t Environ::SaveFile(const char* fileName, cJSON* object)
+{
+  ofstream fp(fileName);
+  string s = cJSON_PrintUnformatted(object);
   fp.write(s.c_str(), s.length());
   return ESP_OK;
 }
 
-esp_err_t Environ::Load()
+cJSON* Environ::LoadFile(const char* filename)
 {
   ifstream file(MEMORY_DATA_FILE);
   if (!file) {
-    return -1;
+    return NULL;
   }
   string s;
   getline(file, s);
-  root = cJSON_Parse(s.c_str());
-  array = cJSON_GetObjectItem(root, "channels");
-  return ESP_OK;
+  cJSON* object = cJSON_Parse(s.c_str());
+  return object;
 }
 
+esp_err_t Environ::Load()
+{
+  root = LoadFile(MEMORY_DATA_FILE);
+  if (root == NULL) {
+    return -1;
+  }
+  array = cJSON_GetObjectItem(root, "channels");
+  current = LoadFile(STATUS_DATA_FILE);
+  return current ? ESP_OK : -1;
+}
