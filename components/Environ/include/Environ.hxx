@@ -25,6 +25,7 @@ public:
   esp_err_t EditMemory(uint8_t itemNo, memoryData data);
   memoryData getStatus();
   esp_err_t setStatus(memoryData current);
+  memoryData GetStatus();
   esp_err_t Save();
   esp_err_t Load();
 private:

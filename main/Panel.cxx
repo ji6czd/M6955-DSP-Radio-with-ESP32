@@ -21,19 +21,20 @@
 
 enum class
 panel_cmd {
-	   power_on,
-	   power_off,
-	   up,
-	   down,
-	   mode_am,
-	   mod_sw,
-	   mode_fm,
-	   mode_inet,
-	   mode_sd,
-	   mode_test,
-	   cmd_end,
-	   exp_0 = 0x22,
-	   exp_1 = 0x23
+  power_on,
+  power_off,
+  up,
+  down,
+  mode_am,
+  mode_sw,
+  mode_fm,
+  mode_inet,
+  mode_sd,
+  status_update,
+  mode_test,
+  cmd_end,
+  exp_0 = 0x22,
+  exp_1 = 0x23
 };
 
 xQueueHandle cmd_queue;
@@ -186,6 +187,36 @@ void RotaryEncoder::cmdtoQueue()
 
 RotaryEncoder enc[1];
 
+class StatusUpdate {
+public:
+  void init(uint16_t interval) { updateInterval = interval; cmd = panel_cmd::status_update; };
+  void checkState();
+  void checkStateISR();
+  bool isInit() { return updateInterval ? true : false; };
+private:
+  uint16_t updateInterval;
+  uint16_t counter;
+  panel_cmd cmd;
+};
+
+void StatusUpdate::checkState()
+{
+  // ステータスセーブ
+  ESP_LOGI("Sup", "%s", "Saving current status");
+  Radio.saveStatus();
+  return;
+}
+
+void StatusUpdate::checkStateISR()
+{
+  if (counter > updateInterval) {
+    xQueueSendFromISR(cmd_queue, &cmd, NULL);
+    counter=0;
+  }
+  counter++;
+}
+StatusUpdate sup;
+
 /* non-class Functions */
 void IRAM_ATTR timer_isr(void *para)
 {
@@ -194,6 +225,7 @@ void IRAM_ATTR timer_isr(void *para)
   enc[0].checkState();
   exp[0].checkStateISR();
   exp[1].checkStateISR();
+  sup.checkStateISR();
   timer_group_clr_intr_status_in_isr(TIMER_GROUP_0, TIMER_0);
   timer_group_enable_alarm_in_isr(TIMER_GROUP_0, TIMER_0);
   timer_spinlock_give(TIMER_GROUP_0);
@@ -208,7 +240,7 @@ void Panel::init()
   exp[0].init(0x22, panel_cmd::exp_0, EXP_SW1);
   exp[1].init(0x23, panel_cmd::exp_1, EXP_SW2);
   sw[0].init(0, 0x000001); 
-  sw[1].init(0, 0x000002); // Nupad star
+  sw[1].init(0, 0x000002); // Numpad star
   sw[2].init(0, 0x000004); // Numpad #
   sw[3].init(0, 0x000008); // Nupad 7
   sw[4].init(0, 0x000010);
@@ -231,6 +263,7 @@ void Panel::init()
   sw[21].init(1, 0x002000);
   RSw[0].init(0, 0xfff000);
   RSw[1].init(1, 0x3f);
+  sup.init(5000);
   timer_config_t
     tm {
 	.alarm_en = TIMER_ALARM_EN,
@@ -326,6 +359,9 @@ void Panel::panel_main()
 	uint8_t select = RSw[1].checkState();
 	if (select) OpCmd.RotarySwitch(1, select);
       }
+    }
+    else if (cmd == panel_cmd::status_update) {
+      sup.checkState();
     }
     vTaskDelay(1 / portTICK_PERIOD_MS);
   }

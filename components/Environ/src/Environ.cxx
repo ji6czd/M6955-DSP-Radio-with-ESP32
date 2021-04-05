@@ -67,11 +67,22 @@ esp_err_t Environ::setStatus(memoryData data)
   return ESP_OK;
 }
 
+memoryData Environ::GetStatus()
+{
+  memoryData mem;
+  mem.stationName = cJSON_GetObjectItem(current, "name")->valuestring;
+  mem.freq = cJSON_GetObjectItem(current, "frequency")->valueint;
+  mem.mode = (mod_t)(cJSON_GetObjectItem(current, "mode")->valueint);
+  mem.streamURL = cJSON_GetObjectItem(current, "streamurl")->valuestring;
+  return mem;
+}
+
 esp_err_t Environ::SaveFile(const char* fileName, cJSON* object)
 {
   ofstream fp(fileName);
   string s = cJSON_PrintUnformatted(object);
   fp.write(s.c_str(), s.length());
+  ESP_LOGI(tag, "%s", s.c_str());
   return ESP_OK;
 }
 
@@ -84,6 +95,7 @@ cJSON* Environ::LoadFile(const char* filename)
   string s;
   getline(file, s);
   cJSON* object = cJSON_Parse(s.c_str());
+  //ESP_LOGI(tag, "%s", cJSON_PrintUnformatted(current));
   return object;
 }
 
@@ -97,3 +109,4 @@ esp_err_t Environ::Load()
   current = LoadFile(STATUS_DATA_FILE);
   return current ? ESP_OK : -1;
 }
+

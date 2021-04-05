@@ -149,7 +149,9 @@ int AKC6955::powerOn()
   st &= 0xf3;
   st |= 0b1000;
   write(AKC6955_VOLUME, st);
-  setFreq(594);
+  //memoryData m;
+  //m = env.GetStatus();
+  //setFreq(m.freq);
   return 0;
 }
 
@@ -329,6 +331,15 @@ bool AKC6955::addMemory()
   m.freq = getFreq();
   m.streamURL= "analog:radio/" ;
   return env.AddMemoryCh(m);
+}
+
+bool AKC6955::saveStatus()
+{
+  memoryData m;
+  m.stationName = "Analogue Radio";
+  m.freq = getFreq();
+  m.streamURL= "analog:radio/" ;
+  return env.setStatus(m);
 }
 
 bool AKC6955::recallMemory(uint8_t memNo)

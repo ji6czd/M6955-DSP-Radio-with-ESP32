@@ -30,6 +30,7 @@ public:
   void chDown();
   bool addMemory();
   bool recallMemory(uint8_t memNo);
+  bool saveStatus();
   void printStatus();
 private:
   bool powerStatus;

@@ -24,7 +24,7 @@ static const char *TAG = "Net";
  * It is placed into RTC memory using RTC_DATA_ATTR and
  * maintains its value when ESP32 wakes from deep sleep.
  */
-RTC_DATA_ATTR static int boot_count = 0;
+//RTC_DATA_ATTR static int boot_count = 0;
 
 void time_sync_notification_cb(struct timeval *tv)
 {
@@ -92,7 +92,7 @@ void setWiFiSta(const char* initSSID, const char* initPass)
   };
   strncpy((char*)wifi_config.sta.ssid, initSSID, sizeof(wifi_config.sta.ssid)-1);
   strncpy((char*)wifi_config.sta.password, initPass, sizeof(wifi_config.sta.password)-1);
-  ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
+  ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
 }
 
 void initNetIF()
