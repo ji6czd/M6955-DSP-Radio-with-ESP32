@@ -31,7 +31,9 @@ void app_main(void)
   Radio.Init(); // アナログラジオ初期化
   Radio.powerOn(); // アナログラジオ電源投入
   //rnet.connect(); // ネットワーク接続
-  //rcon.init(); // シリアルコンソール初期化
+  rcon.init(); // シリアルコンソール初期化
   rpan.init(); // 操作パネル初期化・コマンド処理
+  // 下記は実行されることがない、コマンド処理は無限ループ
+  ESP_LOGI(TAG, "Finished");
 }
 }

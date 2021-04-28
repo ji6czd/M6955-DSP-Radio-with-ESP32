@@ -22,11 +22,16 @@ esp_err_t Environ::init()
     ESP_LOGI(tag, "File load error: creating new data");
     root = cJSON_CreateObject();
     array = cJSON_CreateArray();
-    if (root == NULL || array == NULL) {
+    current = cJSON_CreateObject();
+    if (root == NULL || array == NULL || current == NULL) {
       ESP_LOGE(tag, "Faild to create new memory data.");
       return -1;
     }
     cJSON_AddItemToObject(root, "channels", array);
+  cJSON_AddStringToObject(current, "name", "NHK");
+  cJSON_AddNumberToObject(current, "frequency", (double)594);
+  cJSON_AddNumberToObject(current, "mode", (double)2);
+  cJSON_AddStringToObject(current, "streamurl", "Analogue::Radio");
   }
   return ESP_OK;
 }
@@ -82,7 +87,7 @@ esp_err_t Environ::SaveFile(const char* fileName, cJSON* object)
   ofstream fp(fileName);
   string s = cJSON_PrintUnformatted(object);
   fp.write(s.c_str(), s.length());
-  ESP_LOGI(tag, "%s", s.c_str());
+  ESP_LOGI(tag, "Saving...\n");
   return ESP_OK;
 }
 

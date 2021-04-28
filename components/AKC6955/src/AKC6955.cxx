@@ -149,9 +149,9 @@ int AKC6955::powerOn()
   st &= 0xf3;
   st |= 0b1000;
   write(AKC6955_VOLUME, st);
-  //memoryData m;
-  //m = env.GetStatus();
-  //setFreq(m.freq);
+  memoryData m;
+  m = env.GetStatus();
+  setFreq(m.freq);
   return 0;
 }
 
