@@ -28,10 +28,12 @@ esp_err_t Environ::init()
       return -1;
     }
     cJSON_AddItemToObject(root, "channels", array);
-  cJSON_AddStringToObject(current, "name", "NHK");
-  cJSON_AddNumberToObject(current, "frequency", (double)594);
-  cJSON_AddNumberToObject(current, "mode", (double)2);
-  cJSON_AddStringToObject(current, "streamurl", "Analogue::Radio");
+    cJSON_AddStringToObject(current, "name", "NHK");
+    cJSON_AddNumberToObject(current, "frequency", (double)594);
+    cJSON_AddNumberToObject(current, "mode", (double)2);
+    cJSON_AddStringToObject(current, "streamurl", "Analogue::Radio");
+    SaveFile(STATUS_DATA_FILE, current); // こっちが成功だよお
+    SaveFile(MEMORY_DATA_FILE, root);
   }
   return ESP_OK;
 }
@@ -76,9 +78,9 @@ memoryData Environ::GetStatus()
 {
   memoryData mem;
   mem.stationName = cJSON_GetObjectItem(current, "name")->valuestring;
-  mem.freq = cJSON_GetObjectItem(current, "frequency")->valueint;
-  mem.mode = (mod_t)(cJSON_GetObjectItem(current, "mode")->valueint);
-  mem.streamURL = cJSON_GetObjectItem(current, "streamurl")->valuestring;
+  // mem.freq = cJSON_GetObjectItem(current, "frequency")->valueint;
+  // mem.mode = (mod_t)(cJSON_GetObjectItem(current, "mode")->valueint);
+  // mem.streamURL = cJSON_GetObjectItem(current, "streamurl")->valuestring;
   return mem;
 }
 
@@ -87,7 +89,7 @@ esp_err_t Environ::SaveFile(const char* fileName, cJSON* object)
   ofstream fp(fileName);
   string s = cJSON_PrintUnformatted(object);
   fp.write(s.c_str(), s.length());
-  ESP_LOGI(tag, "Saving...\n");
+  ESP_LOGI(tag, "Saviing");
   return ESP_OK;
 }
 
